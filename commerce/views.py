@@ -22,7 +22,8 @@ from rest_framework.decorators import (
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
 from commerce.payments import initiate_payment
-
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alx_project_nexus.settings')
 import django
@@ -57,6 +58,7 @@ class RegisterView(generics.CreateAPIView):
             class Meta:
                 model = User
                 fields = ["username", "email", "password"]
+                ref_name = "UserRegisterSerializer"
 
             def create(self, validated_data):
                 user = User.objects.create(
@@ -75,14 +77,14 @@ class USerViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["GET"])
     def profile(self, request, pk=None):
         user = self.get_object()
-        products = None #Product.objects.filter()  # TODO filter by user if owner field is added
+        products = Product.objects.filter(owner=user)
         orders = Order.objects.filter(user=user)
-        payments = None
+        payments = Payment.objects.filter(user=user)
         return Response({
             "bio": UserSerializer(user).data,
-            "products": products,
+            "products": ProductSerializer(products, many=True).data,
             "orders": OrderSerializer(orders, many=True).data,
-            "payments": payments,
+            "payments": PaymentSerializer(payments, many=True).data,
         })
     
 
@@ -112,8 +114,25 @@ class OrderViewSet(viewsets.ModelViewSet):
     # serializer class
     serializer_class = OrderSerializer
 
+    @swagger_auto_schema(
+        method='post',
+        operation_description="Add item to order",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'product_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Product ID'),
+                'quantity': openapi.Schema(type=openapi.TYPE_INTEGER, description='Quantity', default=1),
+            },
+            required=['product_id']
+        ),
+        responses={
+            200: openapi.Response('Item added successfully'),
+            404: 'Product not found',
+            400: 'Bad request'
+        }
+    )
     # add item to existing order
-    @action(detail=True, methods=["GET"], url_path="add_item/(?P<pid>[^/.]+)")
+    @action(detail=True, methods=["POST", "GET"], url_path="add_item/(?P<pid>[^/.]+)")
     def add_item(self, request, pk=None, pid=None):
         # get current order object
         order = self.get_object()        
@@ -149,7 +168,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             order_status="pending"
         )
         
-        # TODO add item to order only if product exists
+        # add item to order only if product exists
         try:
             product = Product.objects.get(pk=pid)
             OrderItem.objects.create(
@@ -182,7 +201,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             "payment_url": payment_url,
             "total_amount": amount,
         })
-    
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('tx_ref', openapi.IN_QUERY, description="Transaction Reference", type=openapi.TYPE_STRING),
+            openapi.Parameter('status', openapi.IN_QUERY, description="Payment Status", type=openapi.TYPE_STRING),
+        ]
+    )
     @action(detail=True, methods=["POST"])
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
@@ -192,27 +216,22 @@ class OrderViewSet(viewsets.ModelViewSet):
         if status != "successful":
             # redirect to payment failed page or return failed response
             return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
-        if status:
-            if status == "successful":
-                # get order details and update payment status
-                Payment.objects.create(
-                    user=order.user,
-                    order=order,
-                    amount=order.total_amount(),
-                    status="confirmed",
-                    method="card",
-                )
-                return Response({
-                    "status": "Payment confirmed",
-                    "order_id": order.id,
-                    "message": "wait for shipment",
-                })
-            else:
-                return Response({
-                            "status": status,
-                            "order_id": order.id,
-                            "message": "wait for shipment",
-                        })
+        
+        if status == "successful":
+            # get order details and update payment status
+            Payment.objects.create(
+                user=order.user,
+                order=order,
+                amount=order.total_amount(),
+                status="confirmed",
+                method="card",
+            )
+            return Response({
+                "status": "Payment confirmed",
+                "order_id": order.id,
+                "message": "wait for shipment",
+            })
+        
         # something went wrong
         return Response({"error": "Invalid payment confirmation request"}, status=400)
 
