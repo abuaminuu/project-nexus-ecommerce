@@ -194,7 +194,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         email = str(order.user.email)
         amount = str(order.total_amount())
         phone = str(order.user.is_staff)
-        redirect_url = f"http://127.0.0.1:8001/api/orders/{order.id}/confirm_payment/"
+        redirect_url = request.build_absolute_uri(f"/api/orders/{order.id}/confirm_payment/")
 
         payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
         return Response({
