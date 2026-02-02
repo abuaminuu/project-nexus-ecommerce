@@ -1,0 +1,11 @@
+# 1. Create user first (or use existing)
+# 2. Get token
+curl -X POST http://localhost:8000/api/token/ \
+  -d "username=admin&password=admin123"
+
+# 3. Use token
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5ODAwODY0LCJpYXQiOjE3Njk3NjQ4NjQsImp0aSI6IjJhMGQ4ZDdmYzI3ODQ4N2JiNjdmNzFhM2Y4M2I5NjAwIiwidXNlcl9pZCI6MX0.DqwXc2aTcJawM9v5ize0711A1JOHWjspE1_my-ePfKw" http://localhost:8000/api/orders/
+
+curl -X GET http://localhost:8000/api/orders/ \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5ODAwODY0LCJpYXQiOjE3Njk3NjQ4NjQsImp0aSI6IjJhMGQ4ZDdmYzI3ODQ4N2JiNjdmNzFhM2Y4M2I5NjAwIiwidXNlcl9pZCI6MX0.DqwXc2aTcJawM9v5ize0711A1JOHWjspE1_my-ePfKw"
+  
