@@ -1,5 +1,4 @@
 # tests/test_models.py
-from cairo import Path
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from commerce.models import Product, Order, OrderItem
@@ -81,16 +80,4 @@ class OrderItemModelTest(TestCase):
     def test_order_item_total_price(self):
         """Test total price calculation for order item"""
         self.assertEqual(self.order_item.total_price(), 150)
-
-class PathModelTest(TestCase):
-    """Unit tests for Path model"""
-    
-    def test_path_str_representation(self):
-        """Test string representation of Path model"""
-        path = Path.objects.create(
-            name='Sample Path',
-            description='A sample path for testing',
-            url='/sample-path/'
-        )
-        self.assertEqual(str(path), 'Sample Path')
 
