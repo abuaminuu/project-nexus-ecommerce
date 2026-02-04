@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "drf_yasg",  # for swagger docs
+    "corsheaders",
     # 'rest_framework_simplejwt.token_blacklist', # Optional: for blacklisting
     "rest_framework",
     "django_filters",
@@ -48,9 +49,15 @@ INSTALLED_APPS = [
     "commerce",
 ]
 
+# 5173
+REACT_SERVER_URL = os.getenv("REACT_SERVER_URL", "http://localhost:3000")
+CORS_ALLOWED_ORIGINS = [REACT_SERVER_URL]
+CORS_ALLOWED_ALL_ORIGINS = True
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -80,17 +87,31 @@ WSGI_APPLICATION = "alx_project_nexus.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# for docker settings os.getenv('DB_HOST', 'db'), or 'db'
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        'NAME': os.getenv('DB_NAME', 'ecommerce_nexus'),
-        'USER': os.getenv('DB_USER', 'nexus_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'nexus_pass'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+# for testing of db models
+DATABASES = {}
+
+if "test" in os.sys.argv or "test_coverage" in os.sys.argv:
+    DATABASES["default"] = {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "test_ecommerce_nexus",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "localhost",
+            "PORT": "5432",
     }
-}
+else:
+    # for docker settings os.getenv('DB_HOST', 'db'), or 'db'
+    # these are real credentials, use env vars in production
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            'NAME': os.getenv('DB_NAME', 'ecommerce_nexus'),
+            'USER': os.getenv('DB_USER', 'nexus_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'nexus_pass'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -164,7 +185,6 @@ SIMPLE_JWT = {
 }
 
 FLUTTERWAVE_SECRET_KEY = os.getenv("FLW_SECRET_KEY")
-CORS_ALLOWED_ORIGINS = True
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
