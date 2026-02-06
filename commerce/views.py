@@ -13,18 +13,19 @@ from commerce.serializers import (
 )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import (
-    action,
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
 from commerce.payments import initiate_payment
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import os
+from commerce.filters import ProductFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+# from rest_framework.filters import DjangoFilterBackend
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alx_project_nexus.settings')
 import django
 django.setup()
@@ -69,6 +70,7 @@ class RegisterView(generics.CreateAPIView):
                 return user
         return UserSerializer
 
+        
 # Create your views here.
 class USerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
@@ -77,11 +79,16 @@ class USerViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["GET"])
     def profile(self, request, pk=None):
         user = self.get_object()
+        refresh = RefreshToken.for_user(user)
         products = Product.objects.filter(owner=user)
         orders = Order.objects.filter(user=user)
         payments = Payment.objects.filter(user=user)
         return Response({
             "bio": UserSerializer(user).data,
+            "tokens": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            },
             "products": ProductSerializer(products, many=True).data,
             "orders": OrderSerializer(orders, many=True).data,
             "payments": PaymentSerializer(payments, many=True).data,
@@ -91,13 +98,18 @@ class USerViewSet(viewsets.ReadOnlyModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny] # + is owner permission
+    # permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProductFilter
+
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             self.permission_classes = [permissions.AllowAny]
         else:
-            self.permission_classes = [IsAuthenticated]  # + is owner permission
+            # TODO: add is owner permissions
+            IsOwner = None
+            self.permission_classes = [IsAuthenticated]  
         return super(ProductViewSet, self).get_permissions()
     
 
@@ -184,8 +196,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=404
             )
 
-
-    @action(detail=True, methods=["POST"])
+    # basename -> order-viewset-pay
+    @action(detail=True, methods=["POST"], url_path="pay")
     def pay(self, request, pk=None):
         order = self.get_object()
         # build absolute redirect url from request info
@@ -207,7 +219,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             openapi.Parameter('status', openapi.IN_QUERY, description="Payment Status", type=openapi.TYPE_STRING),
         ]
     )
-    @action(detail=True, methods=["POST"])
+    @action(detail=True, methods=["POST"], url_path="confirm-payment")
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
         # get query params from request
@@ -239,7 +251,6 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     permission_classes = [IsAuthenticated]  # + is owner permission
-
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()

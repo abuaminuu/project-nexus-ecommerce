@@ -1,7 +1,7 @@
 # Core Django
 Django==5.2.10
 djangorestframework==3.16.1
-setuptools==80.10.2
+setuptools==79.0.0
 djangorestframework-simplejwt==5.2.2
 
 # Database
@@ -16,4 +16,4 @@ Pillow==10.1.0  # For ImageField
 django-cors-headers==4.9.0
 django-filter==25.2
 drf-yasg==1.21.11  # For Swagger
-pytest
+pytest==7.4.0

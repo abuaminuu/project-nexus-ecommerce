@@ -14,15 +14,6 @@ from rest_framework import status
 # import view modules
 # test models
 
-def add(x, y):
-    return x + y
-
-class BasicTest(unittest.TestCase):
-    def test_add(self):
-        self.assertEqual(add(2,4), 6)
-        self.assertEqual(add(0,0), 0)
-        self.assertEqual(add(-2,4), 2)
-
 
 class TestProductViewSet(test.TestCase):
 
@@ -63,6 +54,7 @@ class TestProductViewSet(test.TestCase):
     def test_product_create_unauthenticated(self):
         # structure serializer expects
         data = {
+            "owner": self.normal_user,
             "name": "New Product",
             "description": "New Description",
             "category": "Fashion",
@@ -75,15 +67,18 @@ class TestProductViewSet(test.TestCase):
 
     def test_product_create_authenticated(self):
         data = {
+            "owner": self.normal_user.id,
             "name": "New Product",
             "description": "New Description",
-            "category": "Fashion",
+            "category": "fashion",
             "price": 15.99,
             "stock": 4,
         }
+        # login as normal user
         self.client.login(username="user1", password="user1")
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.client.post(self.list_url, data, format='json')
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED) 
         self.assertEqual(response.data["name"], "New Product")
+        # logout
         self.client.logout()
-        

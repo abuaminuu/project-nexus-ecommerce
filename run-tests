@@ -1,0 +1,16 @@
+#!/bin/sh
+echo "Running tests..."
+# python3 manage.py test commerce.tests.test_models
+# python3 manage.py test commerce.tests.test_serializers
+# python3 manage.py test commerce.tests.test_views
+# python3 manage.py test commerce.tests.test_auth
+# python3 manage.py test commerce.tests.test_e2e
+
+# Run all E2E tests
+python manage.py test commerce.tests.test_payment_e2e
+
+# Run specific test
+#python manage.py test commerce.tests.test_payment_e2e.PaymentProcessE2ETest.test_complete_payment_process_success
+
+# Run with verbose output
+#python manage.py test commerce.tests.test_payment_e2e -v 2

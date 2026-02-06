@@ -1,0 +1,41 @@
+run container
+docker exec -it my-container psql -U postgres
+
+run python management commands
+1. if container not running
+docker compose run --rm web python manage.py createsuperuser
+
+2. if container already running
+docker exec -it nexus-commerce-container python manage.py createsuperuser
+docker exec -it nexus-commerce-container pip install djangorestframework-simplejwt
+
+when container is not running
+docker run -it project-nexus-ecommerce-web python manage.py createsuperuser
+
+when container is running
+docker exec -it nexus-commerce-container python manage.py migrate
+
+# {
+#     "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTgzMDI0NDg2NCwiaWF0IjoxNzY5NzY0ODY0LCJqdGkiOiI5MzNhMTVlMjFhM2Y0NjBjYjFjYmNiZThjNWI3ZDE2MyIsInVzZXJfaWQiOjF9.dVFddb5rDEwKo1aiWn9JDCjao0IMZvHnAXvZaSk6kk0",
+#     "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5ODAwODY0LCJpYXQiOjE3Njk3NjQ4NjQsImp0aSI6IjJhMGQ4ZDdmYzI3ODQ4N2JiNjdmNzFhM2Y4M2I5NjAwIiwidXNlcl9pZCI6MX0.DqwXc2aTcJawM9v5ize0711A1JOHWjspE1_my-ePfKw"
+# }
+
+# Stop Docker service
+sudo systemctl stop docker
+sudo systemctl stop docker.socket
+
+# Disable auto-start
+sudo systemctl disable docker
+sudo systemctl disable docker.socket
+
+# Check status
+sudo systemctl status docker
+
+abuaminuu@mint-MacBookPro:~$ sudo service postgresql start
+
+
+{
+    harry:harry
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTgzMDI5ODY4OSwiaWF0IjoxNzY5ODE4Njg5LCJqdGkiOiJmMTMxNmMzN2U1MWQ0Njg2OTQ2OTViY2EwMjA3MmIzNyIsInVzZXJfaWQiOjF9.acc4l9cMuFZ6mTVEA2O48VlzNjOde-KdyLOk2x7ecbI",
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5ODU0Njg5LCJpYXQiOjE3Njk4MTg2ODksImp0aSI6ImM2OTVmNDljYTM5NDRjOTdiZTJlYWNmYWU0MzAzNDgwIiwidXNlcl9pZCI6MX0.lBu4M08VUCXp-idO11O-qM3KA0zpBnQQNaga7yI3uZk"
+}

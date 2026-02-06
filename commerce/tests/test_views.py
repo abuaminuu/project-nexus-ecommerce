@@ -33,7 +33,8 @@ class ProductViewSetTest(APITestCase):
     
     def test_create_product_authenticated(self):
         """Test authenticated user can create product"""
-        self.client.force_authenticate(user=self.normal_user)
+        x = self.client.force_authenticate(user=self.normal_user)
+        print("###: ", x)
         data = {
             'owner':self.normal_user.id,
             'name': 'New Product',

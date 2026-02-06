@@ -38,13 +38,14 @@ schema_view = get_schema_view(
     authentication_classes=[]
 )
 
-
 urlpatterns = [
 
     path("admin/", admin.site.urls),
+    path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("register/", views.RegisterView.as_view(), name="register"),
     path("api/", include("commerce.urls")),
-
     path("api/swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
     path("api/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'), name="api-auth"),
 ]

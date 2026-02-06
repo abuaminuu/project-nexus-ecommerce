@@ -1,0 +1,7 @@
+#!/bin/bash
+echo "Starting Application Engine..."
+
+# start docker service
+sudo systemctl start docker
+
+# run the docker file

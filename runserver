@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# systemctl stop docker.service
+# systemctl stop docker.socket
+
+# sudo systemctl start postgresql
+
+
+# sudo systemctl stop postgresql
+# sudo systemctl restart postgresql
+
+# python manage.py makemigrations commerce
+# python3 manage.py migrate
+python3 manage.py runserver 0.0.0.0:8000

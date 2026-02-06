@@ -10,14 +10,29 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=CHOICES, null=False, default="customer")
 
+    def __str__(self):
+        return self.username
 
 class Product(models.Model):
     CHOICES = (
         ("electronics", "Electronics"),
-        ("home", "Home"),
         ("fashion", "Fashion"),
+        ("home_kitchen", "Home & Kitchen"),
+        ("beauty_care", "Beauty & Personal Care"),
+        ("sports_outdoors", "Sports & Outdoors"),
+        ("health_wellness", "Health & Wellness"),
+        ("automotive", "Automotive"),
+        ("books_media", "Books & Media"),
+        ("toys_games", "Toys & Games"),
+        ("groceries", "Groceries"),
+        ("office_supplies", "Office Supplies"),
+        ("pet_supplies", "Pet Supplies"),
         ("others", "Others"),
     )
+
+
+    # add owner field to track who added the product
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField()
     category = models.CharField(choices=CHOICES)
@@ -31,14 +46,14 @@ class Product(models.Model):
     
 
 class Order(models.Model):
-    ORDERSTATUS = (
+    STATUS = (
         ("pending", "Pending"),
         ("shipped", "Shipped"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled")
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    order_status= models.CharField(choices=ORDERSTATUS, null=False, default="pending", max_length=10)
+    order_status= models.CharField(choices=STATUS, null=False, default="pending", max_length=10)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -58,11 +73,12 @@ class OrderItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Order {self.id} by {self.user.username}"
+        return f"Order {self.id} Item: {self.product.name} x {self.quantity}"
 
     def total_price(self):
         return self.quantity * self.price
 
+# TODO add tx_ref
 class Payment(models.Model):
     STATUS = (
         ("pending", "Pending"),
@@ -79,7 +95,7 @@ class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status= models.Choices(choices=STATUS, null=False, default="pending", max_length=10)
+    status= models.CharField(choices=STATUS, null=False, default="pending", max_length=10)
     method = models.CharField(max_length=16, choices=METHOD, default="card")
     paid_at = models.DateTimeField(auto_now_add=True)
 

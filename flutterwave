@@ -1,0 +1,58 @@
+1. Retrieve Test API Credentials
+
+client id
+19000d23-f832-444d-80dd-b3006c98ac81
+
+client secret
+N2fxRUJF2q4BfEAqsuizQ6qLMX3ApeTd
+FLWSECK_TEST-44cf5c1416ec7f7cd315128ce944cf99-X
+
+encryption key
+drGQToedfHMp8GEE/Ska18V9kn7n4rwH5I4v8XKz6NY=
+
+##
+PIN authentication	Mastercard	
+CARD#: 5531886652142950	
+EXP: 09/32	
+CVV2: 564	
+OTP: 12345	
+PIN: 3310
+
+##
+
+2. Generate Access Token
+
+curl -X POST 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id={{CLIENT_ID}}' \
+--data-urlencode 'client_secret={{CLIENT_SECRET}}' \
+--data-urlencode 'grant_type=client_credentials'
+
+3. Create a Customer Object
+Create an entity to store the customer's details; this object links customer information to payment data.
+curl --request POST \
+--url 'https://developersandbox-api.flutterwave.com/customers' \
+--header 'Authorization: Bearer {{YOUR_ACCESS_TOKEN}}' \
+--header 'Content-Type: application/json' \
+--header 'X-Trace-Id: {{YOUR_UNIQUE_TRACE_ID}}' \
+--data '{
+  "address": {
+    "city": "Gotham",
+    "country": "US",
+    "line1": "221B Baker Street",
+    "line2": "",
+    "postal_code": "94105",
+    "state": "Colorado"
+  },
+  "name": {
+    "first": "King",
+    "middle": "Leo",
+    "last": "James"
+  },
+  "phone": {
+    "country_code": "1",
+    "number": "6313958745"
+  },
+  "email": "james@example.com"
+}'
+

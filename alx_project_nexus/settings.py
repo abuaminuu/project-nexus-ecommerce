@@ -90,6 +90,7 @@ WSGI_APPLICATION = "alx_project_nexus.wsgi.application"
 # for testing of db models
 DATABASES = {}
 
+# for development (comment on dev)
 if "test" in os.sys.argv or "test_coverage" in os.sys.argv:
     DATABASES["default"] = {
             "ENGINE": "django.db.backends.postgresql",
@@ -112,6 +113,14 @@ else:
             'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
+
+# use sqlite for testing on free hosting services.
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
 
 # Password validation
@@ -172,7 +181,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE':5,
+    'PAGE_SIZE':10,
 }
 
 # Simple JWT settings (optional)
