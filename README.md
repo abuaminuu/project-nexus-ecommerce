@@ -1,5 +1,4 @@
 
-```markdown
 # 🛒 E-Commerce Backend API
 
 A robust Django REST Framework backend for e-commerce applications.
