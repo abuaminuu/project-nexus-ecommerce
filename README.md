@@ -218,12 +218,14 @@ python manage.py test commerce.tests.test_views
 - ✅ JWT-based authentication with refresh tokens
 - ✅ Password hashing with Django's built-in hashers
 - ✅ SQL injection protection via Django ORM
+- ✅ Secure headers (CORS, HSTS, etc.) 
+
 <!-- 
 - ✅ XSS protection through template auto-escaping
 - ✅ CSRF protection for session-based auth
 - ✅ Rate limiting on authentication endpoints
 - ✅ Input validation and sanitization
-- ✅ Secure headers (CORS, HSTS, etc.) 
+
 -->
 
 ## 📈 **Performance Optimizations**
@@ -262,13 +264,6 @@ const getProducts = async (filters = {}) => {
   return response.json();
 };
 ```
-## 📊 **API Documentation**
-
-Interactive documentation available at `/swagger/` and `/redoc/`:
-
-![Swagger UI](https://raw.githubusercontent.com/swagger-api/swagger-ui/master/dist/swagger-ui-bundle.js)
-
-
 
 ## 👏 **Acknowledgments**
 
