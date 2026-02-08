@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from .recommendations import simple_recommendations
 from rest_framework.response import Response
 from rest_framework import viewsets, serializers
 from commerce.models import User, Product, Order, OrderItem, Payment
@@ -102,6 +103,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
 
+    @action(detail=True, methods=['GET'])
+    def recommendations(self, request, pk=None):
+        """Get product recommendations"""
+        product = self.get_object()
+        recommended_products = simple_recommendations(product.id, limit=4)
+        
+        serializer = ProductSerializer(recommended_products, many=True)
+        return Response({
+            'product': product.name,
+            'recommended_products': serializer.data
+        })
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
