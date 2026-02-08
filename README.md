@@ -261,7 +261,7 @@ const getProducts = async (filters = {}) => {
   });
   return response.json();
 };
-
+```
 ## 📊 **API Documentation**
 
 Interactive documentation available at `/swagger/` and `/redoc/`:

@@ -30,7 +30,7 @@ django.setup()
 # Now import Django models AFTER setup
 from commerce.models import User, Product, Order, OrderItem, Payment
 
-fake = Faker("en_US")
+fake = Faker("ha_NG")
 # add commerce provider to faker
 fake.add_provider(faker_commerce.Provider)
 
