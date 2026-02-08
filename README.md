@@ -91,6 +91,8 @@ Authorization: Bearer <your_token>
 | `GET` | `/api/products/{id}/` | Product details (public)|
 | `PUT` | `/api/products/{id}/` | Update product (authenticated owner only) |
 | `DELETE` | `/api/products/{id}/` | Delete product (authenticated owner only) |
+| `GET` | `/api/products/{id}/recommendations` | See product recommendations per this product id  (authenticated owner only) |
+
 
 ### **Orders**
 | Method | Endpoint | Description |
