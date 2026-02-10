@@ -1,0 +1,287 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E-Commerce API Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .product { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>🛒 E-Commerce API Demo</h1>
+    
+    <div>
+        <h2>1. Authentication</h2>
+        <button onclick="registerUser()">Register User</button>
+        <button onclick="loginUser()">Login User</button>
+        <button onclick="getProfile()">Get Profile</button>
+        <div id="auth-result"></div>
+    </div>
+
+    <div>
+        <h2>2. Products</h2>
+        <button onclick="getProducts()">Get All Products</button>
+        <button onclick="getFeaturedProducts()">Get Featured Products</button>
+        <div id="products-result"></div>
+    </div>
+
+    <div>
+        <h2>3. Orders</h2>
+        <button onclick="createOrder()">Create Test Order</button>
+        <div id="order-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://abuaminuu.pythonanywhere.com/api';
+        let accessToken = localStorage.getItem('access_token') || '';
+        
+        // ========== UTILITY FUNCTIONS ==========
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const url = `${API_BASE}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (accessToken) {
+                headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+            
+            const config = {
+                method,
+                headers,
+            };
+            
+            if (data) {
+                config.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(url, config);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.detail || result.error || 'API request failed');
+                }
+                
+                return { success: true, data: result };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
+        function displayResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<p class="${isError ? 'error' : 'success'}">${message}</p>`;
+            element.style.display = 'block';
+        }
+        
+        // ========== AUTHENTICATION ==========
+        async function registerUser() {
+            // show registration form
+            username_input = document.createElement();
+            email_input = document.createElement();
+            const userData = {
+                username: `testuser_${Date.now().toString().slice(-4)}`,
+                email: `test${Date.now().toString().slice(-4)}@example.com`,
+                password: 'test123'
+            };
+            
+            const result = await apiCall('/register/', 'POST', userData);
+            
+            if (result.success) {
+                displayResult('auth-result', 
+                    `✅ User registered: ${userData.username}<br>
+                     Email: ${userData.email}<br>
+                     Password: ${userData.password}`);
+            } else {
+                displayResult('auth-result', `❌ Registration failed: ${result.error}`, true);
+            }
+        }
+        
+        async function loginUser() {
+            // Using test credentials - in real app, get from form
+            const loginData = {
+                username: 'lukman',  // Change to your test user
+                password: 'lukman'     // Change to your test password
+            };
+            
+            const result = await apiCall('/auth/token/', 'POST', loginData);
+            
+            if (result.success) {
+                accessToken = result.data.access;
+                localStorage.setItem('access_token', accessToken);
+                displayResult('auth-result', 
+                    `✅ Login successful!<br>
+                     Access token saved to localStorage<br>
+                     User: ${loginData.username}`);
+            } else {
+                displayResult('auth-result', `❌ Login failed: ${result.error}`, true);
+            }
+        }
+        
+        async function getProfile() {
+            if (!accessToken) {
+                displayResult('auth-result', '❌ Please login first', true);
+                return;
+            }
+            
+            const result = await apiCall('/users/my_profile/', 'GET');
+            
+            if (result.success) {
+                const user = result.data.user;
+                displayResult('auth-result', 
+                    `✅ Profile loaded:<br>
+                     Username: ${user.username}<br>
+                     Email: ${user.email}<br>
+                     User ID: ${user.id}`);
+            } else {
+                displayResult('auth-result', `❌ Profile fetch failed: ${result.error}`, true);
+            }
+        }
+        
+        // ========== PRODUCTS ==========
+        async function getProducts() {
+            const result = await apiCall('/products/');
+            
+            if (result.success) {
+                let html = '<h3>📦 Products Found:</h3>';
+                
+                if (result.data.results) {
+                    // If paginated response
+                    result.data.results.forEach(product => {
+                        html += `
+                            <div class="product">
+                                <strong>${product.name}</strong><br>
+                                Price: $${product.price}<br>
+                                Stock: ${product.stock}<br>
+                                ${product.description ? `Description: ${product.description.substring(0, 100)}...` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    if (result.data.count > result.data.results.length) {
+                        html += `<p>... and ${result.data.count - result.data.results.length} more products</p>`;
+                    }
+                } else if (Array.isArray(result.data)) {
+                    // If array response
+                    result.data.forEach(product => {
+                        html += `
+                            <div class="product">
+                                <strong>${product.name}</strong><br>
+                                Price: $${product.price}<br>
+                                Stock: ${product.stock_quantity}
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('products-result').innerHTML = html;
+            } else {
+                displayResult('products-result', `❌ Failed to fetch products: ${result.error}`, true);
+            }
+        }
+        
+        async function getFeaturedProducts() {
+            // If you implemented featured endpoint
+            const result = await apiCall('/products/featured/');
+            
+            if (result.success) {
+                let html = '<h3>⭐ Featured Products:</h3>';
+                
+                if (Array.isArray(result.data)) {
+                    result.data.forEach(product => {
+                        html += `
+                            <div class="product">
+                                <strong>${product.name}</strong><br>
+                                Price: $${product.price}<br>
+                                ${product.description ? `Description: ${product.description.substring(0, 100)}...` : ''}
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('products-result').innerHTML = html;
+            } else {
+                // Fallback to regular products
+                getProducts();
+            }
+        }
+        
+        // ========== ORDERS ==========
+        async function createOrder() {
+            if (!accessToken) {
+                displayResult('order-result', '❌ Please login first', true);
+                return;
+            }
+            
+            // First get a product to order
+            const productsResult = await apiCall('/products/');
+            
+            if (!productsResult.success || !productsResult.data.results?.length) {
+                displayResult('order-result', '❌ No products available to order', true);
+                return;
+            }
+            
+            const product = productsResult.data.results[0];
+            
+            const orderData = {
+                items: [
+                    {
+                        product_id: product.id,
+                        quantity: 1
+                    }
+                ],
+                shipping_address: "123 Test Street, Demo City"
+            };
+            
+            const result = await apiCall('/orders/', 'POST', orderData);
+            
+            if (result.success) {
+                displayResult('order-result', 
+                    `✅ Order created successfully!<br>
+                     Order ID: ${result.data.order_id || result.data.id}<br>
+                     Product: ${product.name}<br>
+                     Quantity: 1<br>
+                     Total: $${product.price}`);
+            } else {
+                displayResult('order-result', `❌ Order creation failed: ${result.error}`, true);
+            }
+        }
+        
+        // ========== INITIALIZATION ==========
+        // Check if user is already logged in
+        window.onload = function() {
+            if (accessToken) {
+                document.getElementById('auth-result').innerHTML = 
+                    '<p class="success">✅ Already logged in (token from localStorage)</p>';
+            }
+            
+            // Test API connection
+            testApiConnection();
+        };
+        
+        async function testApiConnection() {
+            const result = await apiCall('/products/');
+            const statusElement = document.getElementById('api-status');
+            
+            if (!statusElement) {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'api-status';
+                document.body.prepend(statusDiv);
+            }
+            
+            if (result.success) {
+                document.getElementById('api-status').innerHTML = 
+                    '<p class="success">✅ API is reachable and responding</p>';
+            } else {
+                document.getElementById('api-status').innerHTML = 
+                    `<p class="error">❌ API connection failed: ${result.error}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

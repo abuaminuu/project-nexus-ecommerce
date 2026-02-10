@@ -76,8 +76,8 @@ class Order(models.Model):
             models.Index(fields=['user', 'created_at']),
             
             # Status-based queries (admin dashboard)
-            models.Index(fields=['order_status', 'created_at']),
-            models.Index(fields=['payment_status', 'order_status']),
+            # models.Index(fields=['order_status', 'created_at']),
+            # models.Index(fields=['payment_status', 'order_status']),
         ]
 
     def total_amount(self):
@@ -131,7 +131,7 @@ class Payment(models.Model):
     class Meta:
         indexes = [
             # User payment history
-            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['user', 'paid_at']),
         ]
         
     def __str__(self):
