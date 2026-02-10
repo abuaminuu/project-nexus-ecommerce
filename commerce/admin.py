@@ -9,5 +9,3 @@ register(Product)
 register(Order)
 register(OrderItem)
 register(Payment)
-
-

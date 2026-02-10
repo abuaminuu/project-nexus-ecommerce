@@ -112,31 +112,31 @@ WSGI_APPLICATION = "alx_project_nexus.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # for testing of db models
-DATABASES = {}
+# DATABASES = {}
 
-# for development (comment on dev)
-if "test" in os.sys.argv or "test_coverage" in os.sys.argv:
-    DATABASES["default"] = {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "test_ecommerce_nexus",
-            "USER": "postgres",
-            "PASSWORD": "postgres",
-            "HOST": "localhost",
-            "PORT": "5432",
-    }
-else:
-    # for docker settings os.getenv('DB_HOST', 'db'), or 'db'
-    # these are real credentials, use env vars in production
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            'NAME': os.getenv('DB_NAME', 'ecommerce_nexus'),
-            'USER': os.getenv('DB_USER', 'nexus_user'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'nexus_pass'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-        }
-    }
+# # for development (comment on dev)
+# if "test" in os.sys.argv or "test_coverage" in os.sys.argv:
+#     DATABASES["default"] = {
+#             "ENGINE": "django.db.backends.postgresql",
+#             "NAME": "test_ecommerce_nexus",
+#             "USER": "postgres",
+#             "PASSWORD": "postgres",
+#             "HOST": "localhost",
+#             "PORT": "5432",
+#     }
+# else:
+#     # for docker settings os.getenv('DB_HOST', 'db'), or 'db'
+#     # these are real credentials, use env vars in production
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.postgresql",
+#             'NAME': os.getenv('DB_NAME', 'ecommerce_nexus'),
+#             'USER': os.getenv('DB_USER', 'nexus_user'),
+#             'PASSWORD': os.getenv('DB_PASSWORD', 'nexus_pass'),
+#             'HOST': os.getenv('DB_HOST', 'localhost'),
+#             'PORT': os.getenv('DB_PORT', '5432'),
+#         }
+#     }
 
 # use sqlite for testing on free hosting services.
 DATABASES = {
@@ -230,3 +230,5 @@ SWAGGER_SETTINGS = {
     },
     'USE_SESSION_AUTH': False,
 }
+
+LOGIN_REDIRECT_URL = '/api/users/me/profile/'

@@ -77,7 +77,7 @@ class USerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=True, methods=["GET"])
+    @action(detail=True, methods=["GET"], url_path="profile")
     def profile(self, request, pk=None):
         user = self.get_object()
         refresh = RefreshToken.for_user(user)

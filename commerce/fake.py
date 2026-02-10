@@ -30,23 +30,23 @@ django.setup()
 # Now import Django models AFTER setup
 from commerce.models import User, Product, Order, OrderItem, Payment
 
-fake = Faker("ha_NG")
+fake = Faker("en_NG")
 # add commerce provider to faker
 fake.add_provider(faker_commerce.Provider)
 
-def seed_fake_users():
+def seed_fake_users(records):
 
-    # Create in smaller batches for SQLite
-    batch_size = 50
-    total_records = 100
     
-    for batch_start in range(0, total_records, batch_size):
-        batch_end = min(batch_start + batch_size, total_records)
-        
-        # code=fake.text(),
-        id = [1,2,3]
-        objs = [
-            User(
+    
+    for i in range(records):
+        try:
+            username = fake.user_name()
+            email = fake.email()
+
+            # check if user exists
+            if User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists():
+                continue
+            user = User.objects.create_user(
                 username=fake.user_name(),
                 email=fake.email(),
                 password="password",
@@ -54,19 +54,12 @@ def seed_fake_users():
                 last_name=fake.last_name(),
                 role=random.choice(['customer', 'admin'])
             )
-            for _ in range(batch_start, batch_end)
-        ]
-
-        for user in objs:
-            print("## ", user.username)
-        print(len(objs))
-        try:
-            User.objects.bulk_create(objs)
+            user.save()
         except Exception as e:
-            print(f"check: {e}")
-        print(f"Created {batch_end} records...")
-    
-    print("100 realistic entries generated.")
+            print(f"err creating user {e}")
+            continue
+            
+    print(f"{records} realistic entries generated.")
 
 
 def seed_fake_products(num_records):
@@ -121,7 +114,7 @@ def seed_fake_products(num_records):
     # count = Snippet.objects.count()
     # print(f"\n✅ Done! Created {count} snippets in database.")
 
-def seed_orders(num_records):
+def seed_fake_orders(num_records):
     """Create fake orders"""
     for i in range(num_records):
         try:
@@ -150,7 +143,7 @@ def seed_orders(num_records):
             print(f"Error creating order {i+1}: {e}")
             continue
 
-def seed_payments(num_records):
+def seed_fake_payments(num_records):
     """Create fake payments"""
     for i in range(num_records):
         try:
@@ -185,11 +178,10 @@ def gen_sample_data(n):
 
 
 if __name__ == "__main__":
-    # gen_data()
-    # seed_data()
-    # seed_fake_users()
+    # run main
     # gen_sample_data(15)
+    seed_fake_users(50)
     # seed_fake_products(500)
-    # seed_orders(100)
-    seed_payments(100)
-    
+    # seed_fake_orders(100)
+    # seed_fake_payments(100)
+    pass
