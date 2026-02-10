@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from .recommendations import simple_recommendations
+from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
 from rest_framework import viewsets, serializers
 from commerce.models import User, Product, Order, OrderItem, Payment
@@ -103,17 +103,6 @@ class ProductViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
 
-    @action(detail=True, methods=['GET'])
-    def recommendations(self, request, pk=None):
-        """Get product recommendations"""
-        product = self.get_object()
-        recommended_products = simple_recommendations(product.id, limit=4)
-        
-        serializer = ProductSerializer(recommended_products, many=True)
-        return Response({
-            'product': product.name,
-            'recommended_products': serializer.data
-        })
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -123,6 +112,19 @@ class ProductViewSet(viewsets.ModelViewSet):
             IsOwner = None
             self.permission_classes = [IsAuthenticated]  
         return super(ProductViewSet, self).get_permissions()
+
+
+    @action(detail=True, methods=['GET'], url_path="recommendations")
+    def recommendations(self, request, pk=None):
+        """Get product recommendations"""
+        product = self.get_object()
+        recommended_products = simple_recommender.simple_recommendations(product.id, limit=4)
+        
+        serializer = ProductSerializer(recommended_products, many=True)
+        return Response({
+            'product': product.name,
+            'recommended_products': serializer.data
+        })
     
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -155,6 +157,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             400: 'Bad request'
         }
     )
+
     # add item to existing order
     @action(detail=True, methods=["POST", "GET"], url_path="add_item/(?P<pid>[^/.]+)")
     def add_item(self, request, pk=None, pid=None):

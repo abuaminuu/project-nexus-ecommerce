@@ -28,7 +28,7 @@ def simple_recommendations(product_id, limit=4):
         
         # Get product details
         product_ids = [item['product_id'] for item in recommended]
-        return Product.objects.filter(id__in=product_ids, is_active=True)
+        return Product.objects.filter(id__in=product_ids)
         
     except Exception:
         # Fallback: return featured products
