@@ -284,8 +284,8 @@ const getProducts = async (filters = {}) => {
   
 **Built with ❤️ using Django REST Framework**
 
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/project-nexus-ecommerce?style=social)](https://github.com/yourusername/project-nexus-ecommerce)
-[![GitHub forks](https://img.shields.io/github/forks/yourusername/project-nexus-ecommerce?style=social)](https://github.com/yourusername/project-nexus-ecommerce)
+[![GitHub stars](https://img.shields.io/github/stars/abuaminuu/project-nexus-ecommerce?style=social)](https://github.com/abuaminuu/project-nexus-ecommerce)
+[![GitHub forks](https://img.shields.io/github/forks/abuaminuu/project-nexus-ecommerce?style=social)](https://github.com/abuaminuu/project-nexus-ecommerce)
 
 *Star this repo if you found it useful! ⭐*
 
