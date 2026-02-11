@@ -107,7 +107,6 @@ Authorization: Bearer <your_token>
 # Filter by price range
 GET /api/products/?min_price=100&max_price=500
 
-
 # Search products
 GET /api/products/?search=laptop
 
@@ -132,7 +131,7 @@ GET /api/products/?category=electronics
 
 ## 🏗️ **Architecture**
 
-```mermaid
+```
 graph TB
     A[Frontend Client] --> B[REST API]
     B --> C[JWT Authentication]
@@ -200,18 +199,17 @@ Run the comprehensive test suite:
 # Run all tests
 python manage.py test
 
-# # Run with coverage report
-# coverage run manage.py test
-# coverage report -m
-# coverage html  # Generate HTML report
+# TODO: coverage tests
 
 # Run specific test modules
 python manage.py test commerce.tests.test_models
-python manage.py test commerce.tests.test_auth
+python manage.py test commerce.tests.test_serializers
 python manage.py test commerce.tests.test_views
+python manage.py test commerce.tests.test_auth
+python manage.py test commerce.tests.e2e
+python manage.py test commerce.tests.test_payment_e2e
 ```
 
-**Test Coverage**: 90%+ across all critical components
 
 ## 🔒 **Security Features**
 
