@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.http import HttpResponse
 from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
 from rest_framework import viewsets, serializers
+from rest_framework.serializers import Serializer
 from commerce.models import User, Product, Order, OrderItem, Payment
 from commerce.serializers import (
     UserSerializer,
@@ -12,7 +12,7 @@ from commerce.serializers import (
     PaymentSerializer,
     PaymentSerializer,
 )
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
@@ -71,8 +71,7 @@ class RegisterView(generics.CreateAPIView):
                 return user
         return UserSerializer
 
-        
-# Create your views here.
+
 class USerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -221,7 +220,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         email = str(order.user.email)
         amount = str(order.total_amount())
         phone = str(order.user.is_staff)
-        redirect_url = request.build_absolute_uri(f"/api/orders/{order.id}/confirm_payment/")
+        redirect_url = request.build_absolute_uri(f"/api/orders/{order.id}/confirm-payment/")
 
         payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
         return Response({
@@ -234,33 +233,50 @@ class OrderViewSet(viewsets.ModelViewSet):
             openapi.Parameter('status', openapi.IN_QUERY, description="Payment Status", type=openapi.TYPE_STRING),
         ]
     )
-    @action(detail=True, methods=["POST"], url_path="confirm-payment")
+    @action(detail=True, methods=["GET"], url_path="confirm-payment")
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
         # get query params from request
-        tx_ref = request.query_params.get("tx_ref")
         status = request.query_params.get("status")
+        tx_ref = request.query_params.get("tx_ref")
+
+
         if status != "successful":
             # redirect to payment failed page or return failed response
             return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
         
-        if status == "successful":
+        # if status success and payment for that order id is not confirmed already
+        payment = Payment.objects.filter(order=order.id)
+        if status == "successful" and payment is None:
             # get order details and update payment status
-            Payment.objects.create(
+            pay = Payment.objects.create(
                 user=order.user,
                 order=order,
                 amount=order.total_amount(),
                 status="confirmed",
+                tx_ref=tx_ref,
                 method="card",
             )
+            # # update order obj
+            # order.order_status = "delivered"
+            # order.save()
+    
+
             return Response({
+                "pay_id": pay.id,
                 "status": "Payment confirmed",
                 "order_id": order.id,
                 "message": "wait for shipment",
+                "tx_ref": tx_ref,
             })
-        
-        # something went wrong
-        return Response({"error": "Invalid payment confirmation request"}, status=400)
+        else:
+            # something went wrong/ order paid already
+            return Response({
+                "error": "the order: " + str(order.id )+ " is paid already",
+                "message": "Invalid payment confirmation request"
+            }, status=400,
+            )
+
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
