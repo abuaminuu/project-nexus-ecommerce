@@ -125,6 +125,7 @@ class Payment(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status= models.CharField(choices=STATUS, null=False, default="pending", max_length=10)
+    tx_ref = models.CharField(null=True, max_length=128)
     method = models.CharField(max_length=16, choices=METHOD, default="card")
     paid_at = models.DateTimeField(auto_now_add=True)
 
