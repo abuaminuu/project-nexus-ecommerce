@@ -24,7 +24,7 @@ import os
 from commerce.filters import ProductFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework import filters
 
 # from rest_framework.filters import DjangoFilterBackend
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alx_project_nexus.settings')
@@ -76,6 +76,7 @@ class USerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+
     @action(detail=True, methods=["GET"], url_path="profile")
     def profile(self, request, pk=None):
         user = self.get_object()
@@ -99,9 +100,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     # permission_classes = [permissions.AllowAny]
-    filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
+    # ["=name"] for exact match for fields
+    search_fields = ["name", "description"]
+    ordering_fields = ["name", "price", "stock"]
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
