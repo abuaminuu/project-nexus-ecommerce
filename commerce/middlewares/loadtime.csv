@@ -1,0 +1,9 @@
+user,path,loadtime,timestamps
+eokafor,/api/,0.009,2026-02-20 15:46:24.845204
+eokafor,/api/products/,0.134,2026-02-20 15:46:25.987057
+eokafor,/api/products/?page=2,0.033,2026-02-20 15:46:28.162414
+eokafor,/api/products/,0.028,2026-02-20 15:46:30.317082
+eokafor,/api/,0.007,2026-02-20 15:46:31.732756
+eokafor,/api/products/,0.057,2026-02-20 15:46:32.908543
+eokafor,/api/,0.007,2026-02-20 15:46:34.732206
+eokafor,/api/orders/,0.072,2026-02-20 15:46:36.397887
