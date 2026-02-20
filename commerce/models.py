@@ -48,6 +48,12 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # update product stock
+    def update_stocks(self, items_quantity):
+        self.stock -= items_quantity
+        self.save()
+        
+
     class Meta:
         indexes = [            
             # Price filtering (range queries)
@@ -109,9 +115,15 @@ class OrderItem(models.Model):
 
 # TODO add tx_ref
 class Payment(models.Model):
+
+    # cancel - customer cancled payment or seek refund
+    # paid - customer debited on confirm-payment/
+    # confirmed - store owner recieved funds
+    
     STATUS = (
         ("pending", "Pending"),
         ("cancel", "Cancel"),
+        ("paid", "Paid"),
         ("confirmed", "Confirmed")
     )
     
@@ -124,7 +136,7 @@ class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status= models.CharField(choices=STATUS, null=False, default="pending", max_length=10)
+    status = models.CharField(choices=STATUS, null=False, default="pending", max_length=10)
     tx_ref = models.CharField(null=True, max_length=128)
     method = models.CharField(max_length=16, choices=METHOD, default="card")
     paid_at = models.DateTimeField(auto_now_add=True)

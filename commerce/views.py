@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
 from rest_framework import viewsets, serializers
@@ -17,7 +17,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
-from commerce.payments import initiate_payment
+from commerce.payments import initiate_payment, mock_initiate_payment
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import os
@@ -214,7 +214,16 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["POST"], url_path="pay")
     def pay(self, request, pk=None):
         order = self.get_object()
-        # build absolute redirect url from request info
+        
+        # reserve stock before redirecting to payment
+        for item in order.items.all():
+            product = item.product
+            if product.stock < item.quantity:
+                return Response({'error': 'Insufficient stock'}, status=400)
+            # else
+            product.update_stocks(item.quantity)
+
+        
         id = str(order.id)
         name = str(order.user.first_name + " " + order.user.last_name)
         email = str(order.user.email)
@@ -222,11 +231,23 @@ class OrderViewSet(viewsets.ModelViewSet):
         phone = str(order.user.is_staff)
         redirect_url = request.build_absolute_uri(f"/api/orders/{order.id}/confirm-payment/")
 
-        payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
+        # check if payment for this order.id exists in payment table
+        payment_exists = Payment.objects.filter(order=order.id).exists()
+        if payment_exists is False:
+            # make the payment
+            # payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
+            payment_url = mock_initiate_payment(redirect_url)
+
+            return Response({
+                "payment_url": payment_url,
+                "total_amount": amount,
+            })
+
+        # order paid already
         return Response({
-            "payment_url": payment_url,
-            "total_amount": amount,
+            "message": f"order {order.id} paid already/processing"
         })
+
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter('tx_ref', openapi.IN_QUERY, description="Transaction Reference", type=openapi.TYPE_STRING),
@@ -236,18 +257,33 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["GET"], url_path="confirm-payment")
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
-        # get query params from request
+
+        # check for  payment status for this order.id to avoid double update stock
+        pay_exists = Payment.objects.filter(order=order.id, status__in=["confirmed","paid"]).exists()
+        if pay_exists is True:
+            return Response({
+                "message": f"payment: {pay_exists.id} with order: {order.id} is under processing"
+            })
+        
+        # else get status query param from request
         status = request.query_params.get("status")
+
+        # redirect to payment failed page or return failed response
+        if status != "successful":
+            # rollback stock updates
+            for item in order.items.all():
+                product = item.product
+                product.stock += item.quantity
+                product.save()
+
+            # payment failed for other reasons
+            return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
+
+        # get tx_ref query param from request
         tx_ref = request.query_params.get("tx_ref")
 
-
-        if status != "successful":
-            # redirect to payment failed page or return failed response
-            return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
-        
-        # if status success and payment for that order id is not confirmed already
-        payment = Payment.objects.filter(order=order.id)
-        if status == "successful" and payment is None:
+        # if status success
+        if status == "successful":
             # get order details and update payment status
             pay = Payment.objects.create(
                 user=order.user,
@@ -257,12 +293,11 @@ class OrderViewSet(viewsets.ModelViewSet):
                 tx_ref=tx_ref,
                 method="card",
             )
-            # # update order obj
-            # order.order_status = "delivered"
-            # order.save()
-    
+
+            # TODO send order information to logistics
 
             return Response({
+                "items":str(Order.items),
                 "pay_id": pay.id,
                 "status": "Payment confirmed",
                 "order_id": order.id,
@@ -274,9 +309,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({
                 "error": "the order: " + str(order.id )+ " is paid already",
                 "message": "Invalid payment confirmation request"
-            }, status=400,
+            }, status=400
             )
-
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
