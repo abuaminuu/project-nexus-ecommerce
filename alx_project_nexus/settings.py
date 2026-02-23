@@ -60,6 +60,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "commerce.middlewares.middleware.RequestLoggingMiddleware",
+    "commerce.middlewares.middleware.RestrictAccessByTimeMiddleware",
 ]
 
 # 5173
@@ -71,6 +73,8 @@ CORS_ALLOWED_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",      # React dev server
     "http://127.0.0.1:3000",
+    "http://127.0.0.0:8000",
+    "http://0.0.0.0:8000",
     "https://yourfrontend.com",   # EDIT Production frontend
 ]
 
