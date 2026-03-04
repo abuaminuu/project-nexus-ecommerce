@@ -2,7 +2,7 @@ import time
 import csv
 import os
 import datetime
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 
 
 # Get the absolute path of the current script's folder
@@ -26,17 +26,14 @@ class RequestLoggingMiddleware():
         user = request.user
         row = [user, request_path, request.method, load_time, time_stamps]
 
+        # logs request data
         try:
             with open(load_time_file_path, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(row)
         except Exception as e:
-            print(e)
+            return HttpResponse(f"cant logs request data: {e}")
 
-        with open(response_file_path, "a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(response.text)
-        
         return response
 
 
@@ -61,7 +58,7 @@ class RestrictAccessByTimeMiddleware():
         # check if the request is for specific endpoint
         if self.is_specific_endpoint(request.path) and is_restricted:
             return HttpResponseForbidden(
-                "Access to messaging services is restricted between 9 PM and 6 AM."
+                "Access to .../ endpoints (services) is restricted between 9 PM and 6 AM."
                 "Please try again during allowed hours."
             )
 
@@ -176,3 +173,110 @@ class RateLimitMiddleware():
         for ips in ips_to_remove:
             del self.request_log[ips]
 
+class RolePermissionMiddleware:
+    """
+    Docstring for RolePermissionMiddleware
+    check users role before allowing access to endpoint
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+        self.protected_endpoints = {
+        "/api/payments/": ["admin"],
+        }
+        # '/api/products/delete/': ['admin'],
+        # '/api/users/': ['admin', 'moderator'],
+        # '/api/messages/bulk_delete/': ['admin', 'moderator'],
+        # '/api/reports/': ['admin', 'moderator'],
+        # '/api/system/': ['admin'],
+
+    def __call__(self, request):
+        
+        # check if requested path is in protected paths
+        protected_path = self.get_protected_path(request.path)
+
+        if protected_path:
+            # get the user
+            user = request.user
+
+            # check if user is authenticated
+            if not user.is_authenticated:
+                return self.unauthorized_response()
+            
+            # check for required role
+            if not self.has_required_role(user, protected_path):
+                return self.forbidden_response(user)
+
+        response = self.get_response(request)
+        return response    
+        
+
+    def get_protected_path(self, request_path):
+
+        # check if path supplied matches any of the protedted paths
+        for protected_path in self.protected_endpoints.keys():
+            if request_path.startswith(protected_path):
+                return protected_path
+
+        return None
+    def has_required_role(self, user, protected_path):
+        # checks if this user has the required role for this path
+        required_role = self.protected_endpoints[protected_path]
+
+        # get users role
+        user_role = self.get_user_role(user)
+
+        # return True | False
+        return user_role in required_role
+    
+
+    def get_user_role(self, user):
+        # user.is_super_user orget user role from user object (roles: is_staff, is_super_user ....)
+        if user.is_staff:
+            return "admin"
+        elif user.is_staff:
+            return "moderator"
+
+        # using group checks
+        if user.groups.filter(name="Admin").exists():
+            return "admin"
+        if user.groups.filter(name="Moderator").exists():
+            return "moderator"
+        
+        # custom checks: user profile attribute
+        if hasattr(user, "profile"):
+            return getattr(user.profle,"role", "user")
+
+        # default role
+        return "user"
+
+    def unauthorized_response(self):
+        """
+        Return response for unauthenticated users
+        """
+        return JsonResponse(
+            {
+                'error': 'authentication_required',
+                'message': 'Authentication required to access this resource.',
+                'code': 'UNAUTHORIZED_ACCESS'
+            },
+            status=401
+        )
+    
+    def forbidden_response(self, user):
+        """
+        Return response for users without required permissions
+        """
+        user_role = self.get_user_role(user)
+        return JsonResponse(
+            {
+                'error': 'insufficient_permissions',
+                'message': 'You do not have sufficient permissions to perform this action.',
+                'user_role': user_role,
+                'required_roles': list(self.protected_endpoints.values()),
+                'code': 'FORBIDDEN_ACCESS'
+            },
+            status=403
+        )
+    
