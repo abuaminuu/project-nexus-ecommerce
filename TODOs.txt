@@ -1,0 +1,19 @@
+** git flows, payment integration
+1- fix after payment, /confirm-payment/ not updating payment object for that order object passed
+2- fix update stocks after product paid. done
+3- check in dev and prod if refreshing redirect url on GET updates stocks. done
+3- add tx_ref to payments(allow null). done
+2- searching and sorting done
+That's it. Configure your payment provider to send POST requests to https://yourdomain.com/payments/webhook/.
+4- db optimization
+5- middlewares
+6- signals and advanced orm(q,f params)
+7- background jobs with celery
+8- graphQL
+
+#######
+shell
+containers
+container orchestration
+jenkins and github actions
+IP tracking: security and analytics

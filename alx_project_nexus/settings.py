@@ -61,7 +61,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "commerce.middlewares.middleware.RequestLoggingMiddleware",
-    "commerce.middlewares.middleware.RestrictAccessByTimeMiddleware",
+    "commerce.middlewares.middleware.RolePermissionMiddleware"
+    # "commerce.middlewares.middleware.RestrictAccessByTimeMiddleware",
+    # "commerce.middlewares.middleware.RateLimitMiddleware",
 ]
 
 # 5173
