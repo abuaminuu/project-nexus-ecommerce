@@ -38,8 +38,9 @@ def initiate_payment(id, name, email, amount, phone, redirect_url):
         # returns payment link
         data = response.json()
         if data["status"] == "success":
+            # return data as url
             return data["data"]["link"]
-        # return data
+        
 
     except requests.exceptions.RequestException as err:
         if err.response is not None:
@@ -54,7 +55,7 @@ def mock_initiate_payment(redirect_url):
     
     # Instead of making HTTP request, just return the redirect URL with success params
     separator = '&' if '?' in redirect_url else '?'
-    mock_payment_url = f"{redirect_url}{separator}status=successful&tx_ref={tx_ref}&transaction_id=MOCK{tx_ref[-8:]}"
+    mock_payment_url = f"{redirect_url}{separator}status=successful&tx_ref={tx_ref}&order_id={8}"
     
     return mock_payment_url  # Return the URL directly
 

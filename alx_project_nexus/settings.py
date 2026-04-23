@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "drf_yasg",  # for swagger docs
+    "debug_toolbar",
     "corsheaders",
     # 'rest_framework_simplejwt.token_blacklist', # Optional: for blacklisting
     "rest_framework",
@@ -60,10 +61,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # disable on Prod
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "commerce.middlewares.middleware.RequestLoggingMiddleware",
     "commerce.middlewares.middleware.RolePermissionMiddleware"
     # "commerce.middlewares.middleware.RestrictAccessByTimeMiddleware",
     # "commerce.middlewares.middleware.RateLimitMiddleware",
+    
 ]
 
 # 5173
@@ -95,6 +99,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
 ROOT_URLCONF = "alx_project_nexus.urls"
 
 TEMPLATES = [
@@ -237,4 +242,29 @@ SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
 }
 
+# cache backend
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://default:AerrYQETXblnNdEYmPgdtOAfviThSvJL@nozomi.proxy.rlwy.net:14468',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+
 LOGIN_REDIRECT_URL = '/api/users/me/profile/'
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+
+CELERY_RESULTS_BACKEND = "redis://127.0.0.1:6379/0"
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = "admin@localhost.com"
+
+# ip addreses
+INTERNAL_IPS = [
+    "127.0.0.1",
+]

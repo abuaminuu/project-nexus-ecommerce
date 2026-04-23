@@ -15,7 +15,7 @@ PIN authentication	Mastercard
 CARD#: 5531886652142950	
 EXP: 09/32	
 CVV2: 564	
-OTP: 12345	
+OTP: 12345
 PIN: 3310
 
 ##
@@ -55,4 +55,3 @@ curl --request POST \
   },
   "email": "james@example.com"
 }'
-

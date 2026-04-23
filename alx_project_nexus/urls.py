@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from commerce import views
+from . import views as root_views
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -39,13 +40,22 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path("", root_views.index, name="root"),
     path("admin/", admin.site.urls),
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("register/", views.RegisterView.as_view(), name="register"),
+    path("reset-password/", views.UserManagementViewSet, name="reset-password"),
+
+    # for commerce app
     path("api/", include("commerce.urls")),
     path("api/v1.1/", include("commerce.urls")),
     path("api/swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
     path("api/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+
+    # for other apps(with their documentation)
+    # TODO
+
+    # for login route
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'), name="api-auth"),
 ]

@@ -36,14 +36,20 @@ django.setup()
 User = get_user_model()
 
 
-def reset_password(request):
+class UserManagementViewSet():
+
+    @action(detail=False, methods=["GET", "POST"], url_path="reset-password")
+    def reset_password(request):
+        return HttpResponse("please change your password")
     
-    return HttpResponse("please change your password")
-    
+# config logger
+import logging
+logger = logging.getLogger(__name__)
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
-
+    logger.info("Accessing RegisterView")
+    
     def post(self, request):
         username = request.data.get("username")
         email = request.data.get("email")

@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>E-Commerce API Demo</title>
+    <title>Nexus API Demo</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
         button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
@@ -12,13 +12,12 @@
     </style>
 </head>
 <body>
-    <h1>🛒 E-Commerce API Demo</h1>
-    
+    <h1>🛒 Nexus API</h1>
     <div>
         <h2>1. Authentication</h2>
-        <button onclick="registerUser()">Register User</button>
-        <button onclick="loginUser()">Login User</button>
-        <button onclick="getProfile()">Get Profile</button>
+        <button onclick="registerUser()">Register</button>
+        <button onclick="loginUser()">Login</button>
+        <button onclick="getProfile()">Get Auth Code</button>
         <div id="auth-result"></div>
     </div>
 
@@ -36,12 +35,14 @@
     </div>
 
     <script>
-        const API_BASE = 'https://abuaminuu.pythonanywhere.com/api';
+        const REMOTE_API_BASE = 'https://abuaminuu.pythonanywhere.com/api';
+        const LOCAL_API_BASE = '127.0.0.1:8000/api';
+        
         let accessToken = localStorage.getItem('access_token') || '';
         
         // ========== UTILITY FUNCTIONS ==========
         async function apiCall(endpoint, method = 'GET', data = null) {
-            const url = `${API_BASE}${endpoint}`;
+            const url = `${LOCAL_API_BASE}${endpoint}`;
             const headers = {
                 'Content-Type': 'application/json',
             };
@@ -82,8 +83,11 @@
         // ========== AUTHENTICATION ==========
         async function registerUser() {
             // show registration form
-            username_input = document.createElement();
-            email_input = document.createElement();
+            usernameInput = document.createElement("input");
+            emailInput = document.createElement("input");
+            passwordInput = document.createElement("input");
+            console.log("hello !");
+
             const userData = {
                 username: `testuser_${Date.now().toString().slice(-4)}`,
                 email: `test${Date.now().toString().slice(-4)}@example.com`,
@@ -104,9 +108,16 @@
         
         async function loginUser() {
             // Using test credentials - in real app, get from form
+            usernameInput = document.createElement(input)
+            passwordInput = document.createElement(input)
+            
+            // TODO show the elements
+
+            // TODO get the inputs
+
             const loginData = {
-                username: 'lukman',  // Change to your test user
-                password: 'lukman'     // Change to your test password
+                username: usernameInput,
+                password: passwordInput
             };
             
             const result = await apiCall('/auth/token/', 'POST', loginData);
@@ -181,7 +192,7 @@
                 
                 document.getElementById('products-result').innerHTML = html;
             } else {
-                displayResult('products-result', `❌ Failed to fetch products: ${result.error}`, true);
+                displayResult('products-result', `❌ Failed to fetch products!: ${result.error}`, true);
             }
         }
         
@@ -265,7 +276,7 @@
         };
         
         async function testApiConnection() {
-            const result = await apiCall('/products/');
+            const result = await apiCall();
             const statusElement = document.getElementById('api-status');
             
             if (!statusElement) {
@@ -279,7 +290,7 @@
                     '<p class="success">✅ API is reachable and responding</p>';
             } else {
                 document.getElementById('api-status').innerHTML = 
-                    `<p class="error">❌ API connection failed: ${result.error}</p>`;
+                    `<p class="error">❌ API not reachable: ${result.error}</p>`;
             }
         }
     </script>

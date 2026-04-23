@@ -1,7 +1,6 @@
 from django.urls import path, include
 from commerce import views
 from rest_framework.routers import DefaultRouter
-
 router = DefaultRouter()
 
 router.register(r"users", views.USerViewSet, basename="users-viewset")
@@ -12,4 +11,6 @@ router.register(r"payments", views.PaymentViewSet, basename="payments-viewset")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("payments/webhook/", views.payment_webhook, name="payment-webhook"),
+
 ]
