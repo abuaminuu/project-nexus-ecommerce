@@ -24,7 +24,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-
+from django.conf import settings
+import debug_toolbar
 
 # add swagger docs: schema view config
 schema_view = get_schema_view(
@@ -58,4 +59,9 @@ urlpatterns = [
 
     # for login route
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'), name="api-auth"),
+    path('__debug__/', include(debug_toolbar.urls)),
 ]
+
+# debug in dev only
+# if settings.DEBUG:
+#     import debug_toolbar

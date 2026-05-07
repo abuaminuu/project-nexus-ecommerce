@@ -23,9 +23,12 @@ system design components
 containers
 container orchestration
 jenkins and github actions
-IP tracking: security and analytics/(monitoring)
+IP tracking: security, analytics, audit and monitoring.
 
+##### 
+AI wih Python
 
+#####
 General Checklist.
 - user model
 - signup/login/reset password, profile

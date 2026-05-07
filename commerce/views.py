@@ -26,6 +26,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import filters
 import json
 from django.http import HttpResponse
+from commerce.tasks import send_welcome_email_task
 
 # from rest_framework.filters import DjangoFilterBackend
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alx_project_nexus.settings')
@@ -64,6 +65,11 @@ class RegisterView(generics.CreateAPIView):
             email=email,
             password=password
         )
+
+        # send welcome email asynchronously from celery tasks
+        send_welcome_email_task.delay(user.email)
+
+        # return response
         return Response({"message": "User registered successfully"}, status=201)
 
     def get_serializer_class(self):
@@ -191,7 +197,6 @@ def payment_webhook(request):
 
     return HttpResponse(payload, status=200)
 
-
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view all orders
     
@@ -227,7 +232,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["POST", "GET"], url_path="add_item/(?P<pid>[^/.]+)")
     def add_item(self, request, pk=None, pid=None):
         # get current order object
-        order = self.get_object()        
+        order = self.get_object()
         try:
             product = Product.objects.get(pk=pid)
             # check if product exists
@@ -430,7 +435,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.save()
 
         return HttpResponse(payload, status=200)
-
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
