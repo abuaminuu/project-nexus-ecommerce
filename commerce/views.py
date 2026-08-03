@@ -149,7 +149,6 @@ class ProductViewSet(viewsets.ModelViewSet):
             'recommended_products': serializer.data
         })
     
-
 def payment_webhook(request):
     """ 
     webhook to handle notification from payment gateway without POLLing
@@ -300,8 +299,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         email = str(order.user.email)
         amount = str(order.total_amount())
         phone = str(order.user.is_staff)
-        redirect_url = request.build_absolute_uri(f"/api/orders/{order.id}/confirm-payment/")
-        redirect_webhook = request.build_absolute_uri(f"/api/payments/webhook/{order.id}")
+        redirect_url = request.build_absolute_uri(f"/api/commerce/v1.1/orders/{order.id}/confirm-payment/")
+        redirect_webhook = request.build_absolute_uri(f"/api/commerce/v1.1/payments/webhook/{order.id}")
         
         # TODO change in prod
         redirect_url = redirect_webhook
@@ -445,3 +444,20 @@ class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view all payments
+
+class DashboardView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        total_users = User.objects.count()
+        total_products = Product.objects.count()
+        total_orders = Order.objects.count()
+        total_payments = Payment.objects.count()
+
+        return Response({
+            "total_users": total_users,
+            "total_products": total_products,
+            "total_orders": total_orders,
+            "total_payments": total_payments,
+        })
+    
