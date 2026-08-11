@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
-from rest_framework import viewsets, serializers
+from rest_framework import viewsets, serializers, status
 from rest_framework.serializers import Serializer
+from rest_framework.reverse import reverse
 from commerce.models import User, Product, Order, OrderItem, Payment
 from commerce.serializers import (
     UserSerializer,
@@ -52,14 +53,20 @@ class RegisterView(generics.CreateAPIView):
     logger.info("Accessing RegisterView")
     
     def post(self, request):
+        # get data from request
         username = request.data.get("username")
         email = request.data.get("email")
         password = request.data.get("password")
-        pass
+        
+        # handles missing fields
         if not username or not password or not email:
-            return Response({"error": "Username, email and password are required"}, status=400)
+            return Response({"error": "Username, email or password are required"}, status=400)
+        
+        # check if username already exists
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already exists"}, status=400)
+
+        # if not, create the user
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -69,8 +76,15 @@ class RegisterView(generics.CreateAPIView):
         # send welcome email asynchronously from celery tasks
         send_welcome_email_task.delay(user.email)
 
+        # redirect user to login page after registration
+        login_url = reverse("/auth/token/")
+
         # return response
-        return Response({"message": "User registered successfully"}, status=201)
+        return Response({
+            "message": "User registered successfully",
+            "status": "success",
+            "redirect": login_url,
+            }, status=status.HTTP_201_CREATED)
 
     def get_serializer_class(self):
         from django.contrib.auth.forms import UserCreationForm
@@ -82,6 +96,7 @@ class RegisterView(generics.CreateAPIView):
                 fields = ["username", "email", "password"]
                 ref_name = "UserRegisterSerializer"
 
+            # after creating new user 
             def create(self, validated_data):
                 user = User.objects.create(
                     username=validated_data["username"],
@@ -89,10 +104,11 @@ class RegisterView(generics.CreateAPIView):
                     password=validated_data["password"]
                 )
                 return user
+        # 
         return UserSerializer
 
 
-class USerViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -328,6 +344,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             openapi.Parameter('status', openapi.IN_QUERY, description="Payment Status", type=openapi.TYPE_STRING),
         ]
     )
+    
     @action(detail=True, methods=["GET"], url_path="confirm-payment")
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
@@ -445,19 +462,49 @@ class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view all payments
 
-class DashboardView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAdminUser]
+class DashboardViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view
 
-    def get(self, request):
-        total_users = User.objects.count()
-        total_products = Product.objects.count()
-        total_orders = Order.objects.count()
-        total_payments = Payment.objects.count()
+
+    @action(detail=False, methods=["GET"], url_path="orders")
+    def orders(self, request):
+        all_orders = Order.objects.all()
 
         return Response({
-            "total_users": total_users,
-            "total_products": total_products,
-            "total_orders": total_orders,
-            "total_payments": total_payments,
+            "all_orders": all_orders
         })
     
+    @action(detail=False, methods=["GET"], url_path="products")
+    def products(self, request):
+
+        all_products = Product.objects.all()
+        serializer = ProductSerializer(all_products, many=True)
+        page = self.paginate_queryset(serializer.data)
+
+        return Response({
+            "all_products": page
+        })  
+    
+    @action(detail=False, methods=["GET"], url_path="users")
+    def users(self, request):
+        all_users = User.objects.all()
+        serializer = UserSerializer(all_users, many=True)
+        page = self.paginate_queryset(serializer.data)
+        
+        return Response({
+            "all_users": page
+        })
+    
+    @action(detail=False, methods=["GET"], url_path="payments")
+    def payments(self, request):
+        all_payments = Payment.objects.all()
+
+        return Response({
+            "all_payments": all_payments
+        })  
+    
+    # TODO add (users, products, orders, order items, payments) stats 
+    # for the last 7 days, 30 days, and 1 year
+    # and add privilege check for admin only to access this dashboard view

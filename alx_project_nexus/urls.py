@@ -41,6 +41,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    # for admin privilege apps and superusers
     path("", root_views.index, name="root"),
     path("admin/", admin.site.urls),
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -49,16 +50,15 @@ urlpatterns = [
     path("reset-password/", views.UserManagementViewSet, name="reset-password"),
 
     # for commerce app
-    path("api/", include("commerce.urls")),
-    path("api/v1.1/", include("commerce.urls")),
-    path("api/swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
-    path("api/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+    path("api/commerce/v1.1/", include("commerce.urls")),
+    path("api/commerce/v1.1/swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+    path("api/commerce/v1.1/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 
     # for other apps(with their documentation)
-    # TODO
+    path("api/maahad/v1.0/", include("maahad.urls")),
 
     # for login route
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'), name="api-auth"),
+    path('auth/', include('rest_framework.urls', namespace='rest_framework'), name="api-auth"),
     path('__debug__/', include(debug_toolbar.urls)),
 ]
 

@@ -43,11 +43,13 @@ INSTALLED_APPS = [
     "drf_yasg",  # for swagger docs
     "debug_toolbar",
     "corsheaders",
+    "graphene_django",
     # 'rest_framework_simplejwt.token_blacklist', # Optional: for blacklisting
     "rest_framework",
     "django_filters",
     "core",
     "commerce",
+    "maahad",
 ]
 
 
@@ -61,7 +63,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # disable on Prod
+    # TODO disable  debug on Prod
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "commerce.middlewares.middleware.RequestLoggingMiddleware",
     "commerce.middlewares.middleware.RolePermissionMiddleware"
@@ -81,6 +83,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.0:8000",
     "http://0.0.0.0:8000",
+    "http://0.0.0.0:3000",
     "https://yourfrontend.com",   # EDIT Production frontend
 ]
 
@@ -215,7 +218,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE':10,
+    'PAGE_SIZE':5,
 }
 
 # Simple JWT settings (optional)
@@ -252,8 +255,12 @@ CACHES = {
     }
 }
 
+GRAPHENE = {
+    "SCHEMA":"commerce.schema.schema"
+}
 
-LOGIN_REDIRECT_URL = '/api/users/me/profile/'
+# Redirect to dashboard after login
+LOGIN_REDIRECT_URL = '/api/commerce/v1.1'  
 
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 

@@ -7,26 +7,43 @@
 4- payment provider to send POST requests to /payments/webhook/ ( profile -> payment gateway settings) done
 4- db optimization done
 5- middlewares done
-6- reset password endpoint
+6- reset password endpoint - achievable
 6- signals and advanced orm(q,f params)
-6- django redis
-7- async background tasks/jobs with celery
-7- django debugger
-8- graphQL
-9- passing state with js
+6- django redis - part
+7- async background tasks/jobs with celery - part
+7- django debugger - done
+8- graphQL - done
+9- passing state with js - done
 10- ML integration (recommendation engine)
+22- after sucesful auth redirect to /
+21- delete item that only belongs to you.
+22- fix payment issues.
+33- after register, rote to loigin
+44 - remove endpoint- paymet.. to admin.
+
+FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X
+
+echo 'export FLW_SECRET_KEY="FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X"' >> ~/.zshrc
+source ~/.zshrc
+
 
 
 #######
-shell
-system design components
-containers
-container orchestration
-jenkins and github actions
+shell - done
+gitflow 
+cicd pipeline (jenkins/github actions)
+containers && container orchestration
 IP tracking: security, analytics, audit and monitoring.
+system design and components
 
 ##### 
-AI wih Python
+AI wih Python - ML integration (recommendation engine)
+
+# deployment 
+- pythonanywhere - done
+- digital ocean - 
+- alibaba cloud
+- aws 
 
 #####
 General Checklist.

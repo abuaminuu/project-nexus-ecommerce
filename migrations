@@ -1,0 +1,9 @@
+# Delete all migrations
+find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+find . -path "*/migrations/*.pyc" -delete
+
+# Make fresh migrations
+python manage.py makemigrations
+
+# Apply migrations
+python manage.py migrate

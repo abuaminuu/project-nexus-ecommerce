@@ -9,6 +9,7 @@ def generate_tx_ref():
     import uuid
     return str(uuid.uuid4())
 
+# initiate_payment function to initiate payment with Flutterwave API
 def initiate_payment(id, name, email, amount, phone, redirect_url):
     url = "https://api.flutterwave.com/v3/payments"
     tx_ref = generate_tx_ref()
@@ -34,19 +35,20 @@ def initiate_payment(id, name, email, amount, phone, redirect_url):
 
     try:
         response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # raises HTTPError for 4xx/5xx
+        # raises HTTPError for 4xx/5xx
+        response.raise_for_status()  
         # returns payment link
         data = response.json()
         if data["status"] == "success":
             # return data as url
             return data["data"]["link"]
-        
-
+    
     except requests.exceptions.RequestException as err:
         if err.response is not None:
             return (f"{err} -> {err.response.json()}")
         return f"Request error: {err}"
 
+# mocking the initiate_payment function for testing purposes
 def mock_initiate_payment(redirect_url):
     """
     Mock payment function - returns success URL directly
