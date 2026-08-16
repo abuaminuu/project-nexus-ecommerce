@@ -135,7 +135,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    # permission_classes = [permissions.AllowAny]
     filterset_class = ProductFilter
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
@@ -143,13 +142,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "description"]
     ordering_fields = ["name", "price", "stock"]
 
+
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             self.permission_classes = [permissions.AllowAny]
-        else:
-            # TODO: add is owner permissions
-            IsOwner = None
-            self.permission_classes = [IsAuthenticated]  
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsAuthenticated, permissions.IsOwner]  
         return super(ProductViewSet, self).get_permissions()
 
 

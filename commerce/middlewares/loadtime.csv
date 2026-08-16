@@ -2030,3 +2030,7 @@ admin,/api/commerce/v1.1/orders/,GET,0.009,2026-08-03 17:11:31.965899
 admin,/api/commerce/v1.1/orders/,GET,0.015,2026-08-03 17:13:28.310824
 admin,/api/commerce/v1.1/products/,GET,0.012,2026-08-03 17:13:41.600176
 admin,/api/commerce/v1.1/products/3/,GET,0.005,2026-08-03 17:16:31.684445
+admin,/,GET,0.251,2026-08-16 10:19:38.073230
+admin,/favicon.ico,GET,0.01,2026-08-16 10:19:38.365758
+admin,/api/commerce/v1.1/,GET,0.162,2026-08-16 10:19:53.839096
+admin,/api/commerce/v1.1/,GET,0.093,2026-08-16 10:29:23.686401
