@@ -1,9 +1,15 @@
+from urllib import request
 from django.shortcuts import render, get_object_or_404
 from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import viewsets, serializers, status
 from rest_framework.serializers import Serializer
 from rest_framework.reverse import reverse
+from . import permissions as custom_permissions
+from django.conf import settings
+from rest_framework.pagination import PageNumberPagination
+
 from commerce.models import User, Product, Order, OrderItem, Payment
 from commerce.serializers import (
     UserSerializer,
@@ -48,6 +54,14 @@ class UserManagementViewSet():
 import logging
 logger = logging.getLogger(__name__)
 
+
+# Custom pagination class (optional)
+class CustomPagination(PageNumberPagination):
+    page_size = getattr(settings, 'REST_FRAMEWORK', {}).get('PAGE_SIZE', 5)
+    page_size_query_param = 'page_size'  # Allow client to override
+    max_page_size = getattr(settings, 'REST_FRAMEWORK', {}).get('MAX_PAGE_SIZE', 50)
+
+
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     logger.info("Accessing RegisterView")
@@ -77,6 +91,8 @@ class RegisterView(generics.CreateAPIView):
         send_welcome_email_task.delay(user.email)
 
         # redirect user to login page after registration
+        # TODO change this to a frontend login page url in production
+        # after user verifed his email, then redirect to login page
         login_url = reverse("/auth/token/")
 
         # return response
@@ -132,25 +148,87 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         })
     
 
-class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    filterset_class = ProductFilter
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+# class handler for product CRUD operations
+class ProductViewSet(APIView):
+    
+    # create product
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=401)   
 
-    # ["=name"] for exact match for fields
-    search_fields = ["name", "description"]
-    ordering_fields = ["name", "price", "stock"]
+        # create a new product
+        serializer = ProductSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(owner=request.user)
+            return Response(serializer.data, status=201)
+
+        return Response(serializer.errors, status=400)
+
+    # get products
+    def get(self, request, pk=None):
+        if pk:
+            product = get_object_or_404(Product, pk=pk)
+            serializer = ProductSerializer(product)
+            return Response(serializer.data)
+
+        # no pk provided, return all products
+        products = Product.objects.all()
+        paginator = CustomPagination()
+        page = paginator.paginate_queryset(products, request)
+
+        if page:
+            serializer = ProductSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        else:
+            serializer = ProductSerializer(Product, many=True)
+            return Response(serializer.data, status=200)
 
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            self.permission_classes = [permissions.AllowAny]
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAuthenticated, permissions.IsOwner]  
-        return super(ProductViewSet, self).get_permissions()
+    # partial update product
+    def put(self, request, pk):
 
+        # must be authenticated and owner of the product to update it
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=401)
 
+        # requires product id to update
+        if not pk:
+            return Response({"error": "Product ID is required"}, status=400)
+
+        # check if product exists and belongs to the user
+        product = get_object_or_404(Product, pk=pk)
+        if product.owner != request.user:
+            return Response({"error": "You do not have permission to edit this product"}, status=204)
+
+        # else update the product
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+
+        # return error if serializer is not valid
+        return Response(serializer.errors, status=400)
+
+    # delete product
+    def delete(self, request, pk):
+        # must be authenticated and owner of the product to delete it
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=401)
+
+        # requires product id to delete
+        if not pk:
+            return Response({"error": "Product ID is required"}, status=400)
+
+        # check if product exists and belongs to the user
+        product = get_object_or_404(Product, pk=pk)
+        if product.owner != request.user:
+            return Response({"error": "You do not have permission to delete this product"}, status=204)
+
+        # else delete the product
+        product.delete()
+        return Response({"message": "Product deleted successfully"}, status=200)    
+    
+    # works with ModelViewsets only (create separate endpoint for recommendations)
     @action(detail=True, methods=['GET'], url_path="recommendations")
     def recommendations(self, request, pk=None):
         """Get product recommendations"""
@@ -169,7 +247,7 @@ def payment_webhook(request):
     use this to trigger backend workflows like: 
     - sending a receipt 
     - updating an order status to Paid
-    - granting access to digital content.
+    - granting access to restricted content.
     """
 
     #get raw data
