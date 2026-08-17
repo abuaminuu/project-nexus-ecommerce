@@ -154,15 +154,15 @@ class ProductViewSet(APIView):
     # create product
     def post(self, request):
         if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=401)   
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)   
 
         # create a new product
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(owner=request.user)
-            return Response(serializer.data, status=201)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=400)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # get products
     def get(self, request, pk=None):
@@ -176,12 +176,12 @@ class ProductViewSet(APIView):
         paginator = CustomPagination()
         page = paginator.paginate_queryset(products, request)
 
-        if page:
+        if page is not None:
             serializer = ProductSerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)
         else:
-            serializer = ProductSerializer(Product, many=True)
-            return Response(serializer.data, status=200)
+            serializer = ProductSerializer(products, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     # partial update product
@@ -189,44 +189,40 @@ class ProductViewSet(APIView):
 
         # must be authenticated and owner of the product to update it
         if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=401)
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # requires product id to update
         if not pk:
-            return Response({"error": "Product ID is required"}, status=400)
-
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         # check if product exists and belongs to the user
         product = get_object_or_404(Product, pk=pk)
         if product.owner != request.user:
-            return Response({"error": "You do not have permission to edit this product"}, status=204)
-
+            return Response({"error": "You do not have permission to edit product you dont own!"}, status=status.HTTP_403_FORBIDDEN)
         # else update the product
         serializer = ProductSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=200)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         # return error if serializer is not valid
-        return Response(serializer.errors, status=400)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # delete product
     def delete(self, request, pk):
         # must be authenticated and owner of the product to delete it
         if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=401)
+            return Response({"error": "Authentication required !"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # requires product id to delete
         if not pk:
-            return Response({"error": "Product ID is required"}, status=400)
-
-        # check if product exists and belongs to the user
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # check if product exists and does not belong to the user
         product = get_object_or_404(Product, pk=pk)
         if product.owner != request.user:
-            return Response({"error": "You do not have permission to delete this product"}, status=204)
-
+            return Response({"error": "You do not have permission to delete product you dont own!"}, status=status.HTTP_403_FORBIDDEN)
         # else delete the product
         product.delete()
-        return Response({"message": "Product deleted successfully"}, status=200)    
+        return Response({"message": "Product deleted successfully"}, status=status.HTTP_200_OK)    
     
     # works with ModelViewsets only (create separate endpoint for recommendations)
     @action(detail=True, methods=['GET'], url_path="recommendations")
@@ -288,8 +284,11 @@ def payment_webhook(request):
 
     return HttpResponse(payload, status=200)
 
+# the final receipt
 class OrderViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view all orders
+
+    # + is owner permission, and admin can view all orders
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         queryset = Order.objects.all()
@@ -528,11 +527,13 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return HttpResponse(payload, status=200)
 
+# individula line items on reciept (Order)
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     permission_classes = [IsAuthenticated]  # + is owner permission
 
+# payment table
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
