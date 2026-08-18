@@ -236,7 +236,11 @@ class ProductViewSet(APIView):
             'product': product.name,
             'recommended_products': serializer.data
         })
-    
+
+class PaymentWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+
 def payment_webhook(request):
     """ 
     webhook to handle notification from payment gateway without POLLing
@@ -245,6 +249,7 @@ def payment_webhook(request):
     - updating an order status to Paid
     - granting access to restricted content.
     """
+    return HttpResponse("payment ok")
 
     #get raw data
     payload = json.loads(request.body)
@@ -289,16 +294,15 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     # + is owner permission, and admin can view all orders
     permission_classes = [IsAuthenticated]
-    
+    # serializer class
+    serializer_class = OrderSerializer
+
     def get_queryset(self):
         queryset = Order.objects.all()
         # TODO filter by current loggedin user
         # prefetch order and their related items
         queryset = queryset.prefetch_related("items", "items__product")
         return queryset
-
-    # serializer class
-    serializer_class = OrderSerializer
 
     @swagger_auto_schema(
         method='post',
@@ -400,9 +404,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         payment_exists = Payment.objects.filter(order=order.id).exists()
         if payment_exists is False:
             # make the payment
-            # payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
-            payment_url = mock_initiate_payment(redirect_url)
+            payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
 
+            # local mock payment url for testing without making actual payment
+            # payment_url = mock_initiate_payment(redirect_url)
+
+            # proceed to payment gateway and return payment url to frontend
             return Response({
                 "payment_url": payment_url,
                 "total_amount": amount,
@@ -526,6 +533,81 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.save()
 
         return HttpResponse(payload, status=200)
+
+# payment callback with webhook
+class PaymentCallbackView(APIView):
+    
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, order_id=None):
+        return Response({"message": "Payment callback received via GET for testing!"}, status=200)
+    
+    def post(self, request, order_id):
+
+        return Response({"message": "Payment callback received"}, status=200)
+    
+        # get callback data
+        data = json.loads(request.body)
+
+        # get the order
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found"}, status=404)
+
+        # check payment status for this order.id to avoid double update stock
+        pay_exists = Payment.objects.filter(order=order.id, status__in=["confirmed","paid"]).exists()
+        if pay_exists is True:
+            return Response({
+                "message": f"payment: {pay_exists.id} with order: {order.id} is under processing"
+            })
+        
+        # else get status query param from request
+        status = request.query_params.get("status")
+
+        # redirect to payment failed page or return failed response
+        if status != "successful":
+            # rollback stock updates
+            for item in order.items.all():
+                product = item.product
+                product.stock += item.quantity
+                product.save()
+
+            # payment failed for other reasons
+            return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
+
+        # get tx_ref query param from request
+        tx_ref = request.query_params.get("tx_ref")
+
+        # if status success
+        if status == "successful":
+            # get order details and update payment status
+            pay = Payment.objects.create(
+                user=order.user,
+                order=order,
+                amount=order.total_amount(),
+                status="confirmed",
+                tx_ref=tx_ref,
+                method="card",
+            )
+
+            # TODO send order information to logistics
+
+            return Response({
+                "items":str(Order.items),
+                "pay_id": pay.id,
+                "status": "Payment confirmed",
+                "order_id": order.id,
+                "message": "wait for shipment",
+                "tx_ref": tx_ref,
+            })
+        else:
+            # something went wrong/ order paid already
+            return Response({
+                "error": "the order: " + str(order.id ) + " is paid already",
+                "message": "Invalid payment confirmation request"
+            }, status=400
+            )
 
 # individula line items on reciept (Order)
 class OrderItemViewSet(viewsets.ModelViewSet):

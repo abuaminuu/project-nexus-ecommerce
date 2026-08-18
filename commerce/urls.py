@@ -4,19 +4,22 @@ from graphene_django.views import GraphQLView
 from rest_framework.routers import DefaultRouter
 
 user_router = DefaultRouter()
-
-dashboard_router = DefaultRouter()
 # register routes
 # user_router.register(r"profile", views.ProfileViewSet, basename="profile-viewset")
-user_router.register(r"products", views.ProductViewSet, basename="products-viewset")
+user_router.register(r"orders", views.OrderViewSet, basename="orders-viewset")
 user_router.register(r"dashboard", views.DashboardViewSet, basename="dashboard-viewset")
+# user_router.register(r"payments", views.PaymentViewSet, basename="payments-viewset")
+# admin dashboard router for admin users
+dashboard_router = DefaultRouter()
 dashboard_router.register(r"orders", views.OrderViewSet, basename="orders-viewset") 
-
 
 # add paths
 urlpatterns = [
     # path("", include(router.urls)),  # include the registered routes
-    path("", views.ProductViewSet.as_view({'get': 'list', 'post': 'create'}), name="index"),
-    path("payments/webhook/", views.payment_webhook, name="payment-webhook"),
+    path("products/", views.ProductViewSet.as_view(), name="index"),
+    path("products/<int:pk>/", views.ProductViewSet.as_view(), name="product-detail"),
+    path("payments/callback/", views.PaymentCallbackView.as_view(), name="payment-callback-view"),
     path("graphql/", GraphQLView.as_view(graphiql=True), name="graphql-endpoint"),
 ]
+
+urlpatterns += user_router.urls
