@@ -145,8 +145,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             "products": ProductSerializer(products, many=True).data,
             "orders": OrderSerializer(orders, many=True).data,
             "payments": PaymentSerializer(payments, many=True).data,
-        })
-    
+        }) 
 
 # class handler for product CRUD operations
 class ProductViewSet(APIView):
@@ -236,10 +235,6 @@ class ProductViewSet(APIView):
             'product': product.name,
             'recommended_products': serializer.data
         })
-
-class PaymentWebhookView(APIView):
-    permission_classes = [permissions.AllowAny]
-
 
 # the final receipt
 class OrderViewSet(viewsets.ModelViewSet):
@@ -340,7 +335,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             # else
             product.update_stocks(item.quantity)
 
-        
+        # order details
         order_id = str(order.id)
         name = str(order.user.first_name + " " + order.user.last_name)
         email = str(order.user.email)
@@ -354,13 +349,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             # make the payment
             payment_url = initiate_payment(order_id, name, email, amount, phone, redirect_callback)
 
-            # local mock payment url for testing without making actual payment
-            # payment_url = mock_initiate_payment(redirect_url)
-
             # proceed to payment gateway and return payment url to frontend
             return Response({
-                "payment_url": payment_url,
-                "total_amount": amount,
+                "payment_url": payment_url
             })
 
         # order paid already
@@ -432,55 +423,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 "message": "Invalid payment confirmation request"
             }, status=400
             )
-        
-    # confirm payment webhhok
-    @action(detail=False, methods=["POST"], url_path="comfirm-payment-webhook")
-    def comfirm_payment_webhook(request):
-        """ 
-        webhook to handle notification from payment gateway without POLLing
-        use this to trigger backend workflows like: 
-        - sending a receipt 
-        - updating an order status to Paid
-        - granting access to digital content.
-        """
-
-        #get raw data
-        payload = json.loads(request.body)
-
-        # extract tx_ref and order_id
-        tx_ref = payload.get("tx_ref", "")
-        order_id = payload.get("order_id", "")
-        if not order_id:
-            return HttpResponse(status=400)
-        
-        # get the order
-        try:
-            order = Order.objects.get(id=order_id)
-        except Order.DoesNotExists as e:
-            return HttpResponse(status=404)
-        
-        # check payment status
-        status = payload.get("status")
-        if status == "successfull":
-            order.status = "paid"
-            order.save()
-
-            # create payment record
-            Payment.objects.create(
-                order=order,
-                tx_ref=tx_ref,
-                status="confirmed"
-            )
-        elif status == "failed":
-            # restore stock
-            for item in Order.items.all():
-                product = item.product
-                product.stock += item.quantity
-                product.save()
-            order.status = "failed"
-            order.save()
-
-        return HttpResponse(payload, status=200)
 
 # payment callback to present failure/success to the user 
 class PaymentCallbackView(APIView):
@@ -488,26 +430,26 @@ class PaymentCallbackView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, order_id=None):
-        data = request.query_params
+        data = request.query_params.dict()
         reference = data.get("tx_ref")
-
-        message = f"Payment callback received via GET for testing! ref: {reference}"
         transaction_status = data.get("status")
+
         if transaction_status == "successful":
             # handover success key to frontend for user to see success page
             return Response({
                 "success": True,
-                "message": message
+                "order_id": order_id,
+                "data": data
                 }, status=status.HTTP_200_OK)
 
-        # payment failed or cancelled, return error message to frontend for user to see failure page
+        # else payment failed or cancelled, return error message to frontend for user to see failure page
         message = f"Payment failed/cancelled for order {order_id} with reference: {reference}"
         return Response({
-            "order_id": order_id,
-            "tx_ref": reference,
             "success": False,
-            "message": message
+            "order_id": order_id,
+            "data": data
             }, status=status.HTTP_400_BAD_REQUEST)    
+
 
 # webhook to handle notification from payment gateway without POLLing
 class PaymentWebhookView(APIView):
@@ -551,7 +493,12 @@ class PaymentWebhookView(APIView):
             order = Order.objects.get(id=order_id)
         except Order.DoesNotExist:
             return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+    
+        return Response({
+            "message": "Webhook received successfully",
+            "hmac": signature
+            }, status=200)
+    
         # check payment status
         Payment_status = payload.get("status")
         if Payment_status == "successful":
