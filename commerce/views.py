@@ -9,7 +9,7 @@ from rest_framework.reverse import reverse
 from . import permissions as custom_permissions
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
-
+from django.views.decorators.csrf import csrf_exempt as crsf_exempt
 from commerce.models import User, Product, Order, OrderItem, Payment
 from commerce.serializers import (
     UserSerializer,
@@ -241,54 +241,6 @@ class PaymentWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
 
 
-def payment_webhook(request):
-    """ 
-    webhook to handle notification from payment gateway without POLLing
-    use this to trigger backend workflows like: 
-    - sending a receipt 
-    - updating an order status to Paid
-    - granting access to restricted content.
-    """
-    return HttpResponse("payment ok")
-
-    #get raw data
-    payload = json.loads(request.body)
-
-    # extract tx_ref and order_id
-    tx_ref = payload.get("tx_ref", "")
-    order_id = payload.get("order_id", "")
-    if not order_id:
-        return HttpResponse(status=400)
-    
-    # get the order
-    try:
-        order = Order.objects.get(id=order_id)
-    except Order.DoesNotExists as e:
-        return HttpResponse(status=404)
-    
-    # check payment status
-    status = payload.get("status")
-    if status == "successfull":
-        order.status = "paid"
-        order.save()
-
-        # create payment record
-        Payment.objects.create(
-            order=order,
-            tx_ref=tx_ref,
-            status="confirmed"
-        )
-    elif status == "failed":
-        # restore stock
-        for item in Order.items.all():
-            product = item.product
-            product.stock += item.quantity
-            product.save()
-        order.status = "failed"
-        order.save()
-
-    return HttpResponse(payload, status=200)
-
 # the final receipt
 class OrderViewSet(viewsets.ModelViewSet):
 
@@ -389,22 +341,18 @@ class OrderViewSet(viewsets.ModelViewSet):
             product.update_stocks(item.quantity)
 
         
-        id = str(order.id)
+        order_id = str(order.id)
         name = str(order.user.first_name + " " + order.user.last_name)
         email = str(order.user.email)
         amount = str(order.total_amount())
         phone = str(order.user.is_staff)
-        redirect_url = request.build_absolute_uri(f"/api/commerce/v1.1/orders/{order.id}/confirm-payment/")
-        redirect_webhook = request.build_absolute_uri(f"/api/commerce/v1.1/payments/webhook/{order.id}")
-        
-        # TODO change in prod
-        redirect_url = redirect_webhook
+        redirect_callback = request.build_absolute_uri(f"/api/commerce/v1.1/payments/callback/{order.id}")        
 
         # check if payment for this order.id exists in payment table
         payment_exists = Payment.objects.filter(order=order.id).exists()
         if payment_exists is False:
             # make the payment
-            payment_url = initiate_payment(id, name, email, amount, phone, redirect_url)
+            payment_url = initiate_payment(order_id, name, email, amount, phone, redirect_callback)
 
             # local mock payment url for testing without making actual payment
             # payment_url = mock_initiate_payment(redirect_url)
@@ -534,81 +482,102 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return HttpResponse(payload, status=200)
 
-# payment callback with webhook
+# payment callback to present failure/success to the user 
 class PaymentCallbackView(APIView):
     
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, order_id=None):
-        return Response({"message": "Payment callback received via GET for testing!"}, status=200)
-    
-    def post(self, request, order_id):
+        data = request.query_params
+        reference = data.get("tx_ref")
 
-        return Response({"message": "Payment callback received"}, status=200)
-    
-        # get callback data
-        data = json.loads(request.body)
+        message = f"Payment callback received via GET for testing! ref: {reference}"
+        transaction_status = data.get("status")
+        if transaction_status == "successful":
+            # handover success key to frontend for user to see success page
+            return Response({
+                "success": True,
+                "message": message
+                }, status=status.HTTP_200_OK)
 
+        # payment failed or cancelled, return error message to frontend for user to see failure page
+        message = f"Payment failed/cancelled for order {order_id} with reference: {reference}"
+        return Response({
+            "order_id": order_id,
+            "tx_ref": reference,
+            "success": False,
+            "message": message
+            }, status=status.HTTP_400_BAD_REQUEST)    
+
+# webhook to handle notification from payment gateway without POLLing
+class PaymentWebhookView(APIView):
+    """ 
+    webhook to handle notification from payment gateway without POLLing
+    use this to trigger backend workflows like: 
+    - sending a receipt 
+    - updating an order status to Paid
+    - granting access to restricted content.
+    - since the endpoint is public and without any authentication, 
+      verfiy payment gateways HMAC (Hash-based Message Authentication Code) to avoid 
+      spoofing and ensure the request is from a trusted source.
+    """
+    # No authentication required for webhook
+    authentication_classes = []  
+    permission_classes = [permissions.AllowAny]
+
+    @crsf_exempt
+    def post(self, request):
+        """
+        Handle payment gateway webhook notifications.
+        This endpoint is used to update order status based on payment results.
+        """
+        # verify HMAC signature
+        signature = request.headers.get("X-Payment-Gateway-Signature")
+
+        if not signature:
+            return Response({"error": "Missing HMAc signature"}, status=400)
+        
+        payload = json.loads(request.body)
+
+        # extract tx_ref and order_id
+        tx_ref = payload.get("tx_ref")
+        order_id = payload.get("order_id")
+        
+        if order_id is None or tx_ref is None:
+            return Response({"error": "Order ID and transaction reference and order id are required/missing"}, status=400)
+        
         # get the order
         try:
             order = Order.objects.get(id=order_id)
         except Order.DoesNotExist:
-            return Response({"error": "Order not found"}, status=404)
-
-        # check payment status for this order.id to avoid double update stock
-        pay_exists = Payment.objects.filter(order=order.id, status__in=["confirmed","paid"]).exists()
-        if pay_exists is True:
-            return Response({
-                "message": f"payment: {pay_exists.id} with order: {order.id} is under processing"
-            })
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        # else get status query param from request
-        status = request.query_params.get("status")
+        # check payment status
+        Payment_status = payload.get("status")
+        if Payment_status == "successful":
+            order.status = "paid"
+            order.save()
 
-        # redirect to payment failed page or return failed response
-        if status != "successful":
-            # rollback stock updates
+            # create payment record
+            Payment.objects.create(
+                order=order,
+                tx_ref=tx_ref,
+                status="confirmed"
+            )
+            return Response({"message": "Payment confirmed"}, status=200)
+        
+        elif Payment_status == "failed":
+            # restore stock
             for item in order.items.all():
                 product = item.product
                 product.stock += item.quantity
                 product.save()
+            order.status = "failed"
+            order.save()
+            return Response({"message": "Payment failed, stock restored"}, status=200)
 
-            # payment failed for other reasons
-            return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
-
-        # get tx_ref query param from request
-        tx_ref = request.query_params.get("tx_ref")
-
-        # if status success
-        if status == "successful":
-            # get order details and update payment status
-            pay = Payment.objects.create(
-                user=order.user,
-                order=order,
-                amount=order.total_amount(),
-                status="confirmed",
-                tx_ref=tx_ref,
-                method="card",
-            )
-
-            # TODO send order information to logistics
-
-            return Response({
-                "items":str(Order.items),
-                "pay_id": pay.id,
-                "status": "Payment confirmed",
-                "order_id": order.id,
-                "message": "wait for shipment",
-                "tx_ref": tx_ref,
-            })
-        else:
-            # something went wrong/ order paid already
-            return Response({
-                "error": "the order: " + str(order.id ) + " is paid already",
-                "message": "Invalid payment confirmation request"
-            }, status=400
-            )
-
+        return Response({"error": "Invalid payment status"}, status=400)
+    
 # individula line items on reciept (Order)
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()

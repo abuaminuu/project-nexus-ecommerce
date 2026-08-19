@@ -10,14 +10,17 @@ def generate_tx_ref():
     return str(uuid.uuid4())
 
 # initiate_payment function to initiate payment with Flutterwave API
-def initiate_payment(id, name, email, amount, phone, redirect_url):
+def initiate_payment(order_id, name, email, amount, phone, redirect_callback):
     url = "https://api.flutterwave.com/v3/payments"
     tx_ref = generate_tx_ref()
     payload = {
         "tx_ref": tx_ref,
         "amount": amount,
         "currency": "NGN",
-        "redirect_url": redirect_url,
+        "redirect_url": redirect_callback,
+        "metadata": {
+            "order_id": order_id,
+        },
         "customer": {
             "email": email,
             "name": name,
@@ -28,8 +31,12 @@ def initiate_payment(id, name, email, amount, phone, redirect_url):
         },
     }
 
+    # "Authorization": f"Bearer {os.environ.get('FLW_SECRET_KEY')}",
+
+    token = "FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X"
+
     headers = {
-        "Authorization": f"Bearer {os.environ.get('FLW_SECRET_KEY')}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
 
@@ -60,21 +67,3 @@ def mock_initiate_payment(redirect_url):
     mock_payment_url = f"{redirect_url}{separator}status=successful&tx_ref={tx_ref}&order_id={8}"
     
     return mock_payment_url  # Return the URL directly
-
-class Order():
-    def __init__(self, id, name, email, amount, phone, redirect_url):
-        self.id = id
-        self.email = email
-        self.name = name
-        self.amount = amount
-        self.phone = phone
-        self.redirect_url = redirect_url
-
-
-# redirect_url = f"http://127.0.0.1:8001/api/orders/{1}/confirm_payment/"
-# init_pay = initiate_payment(1, "John Doe", "john.doe@example.com", 1800, "1234567890", redirect_url)
-# print(init_pay if init_pay else "no response")
-# print(init_pay if init_pay else "no response")
-# print(init_pay["data"]["link"])
-# for k, v in init_pay.items():
-    # print(f"{k}: {v}")
