@@ -9,7 +9,6 @@ from rest_framework.reverse import reverse
 from . import permissions as custom_permissions
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
-from django.views.decorators.csrf import csrf_exempt as crsf_exempt
 from commerce.models import User, Product, Order, OrderItem, Payment
 from commerce.serializers import (
     UserSerializer,
@@ -467,27 +466,46 @@ class PaymentWebhookView(APIView):
     authentication_classes = []  
     permission_classes = [permissions.AllowAny]
 
-    @crsf_exempt
     def post(self, request):
         """
         Handle payment gateway webhook notifications.
         This endpoint is used to update order status based on payment results.
         """
         # verify HMAC signature
-        signature = request.headers.get("X-Payment-Gateway-Signature")
+        signature = request.headers.get("verif-hash") or request.headers.get("flutterwave-signature")
 
         if not signature:
-            return Response({"error": "Missing HMAc signature"}, status=400)
+            return Response({"error": "Missing HMAc signature"}, status=status.HTTP_400_BAD_REQUEST)
         
-        payload = json.loads(request.body)
+        if signature != getattr(settings, "FLUTTERWAVE_WEBHOOK_SECRET"):
+            return Response({"error": "Invalid HMAC signature"}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            payload = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return Response({"error": "Invalid JSON in request body"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # get event and data from payload
+        event = payload.get("event")
+        data = payload.get("data", {})
 
         # extract tx_ref and order_id
-        tx_ref = payload.get("tx_ref")
+        tx_ref = payload.get("tx_ref") or data.get("tx_ref")
         order_id = payload.get("order_id")
         
+        # seee what comes back
+        return Response({
+            "payload": payload
+        }, status=status.HTTP_200_OK)
+    
+        # check order and tx_ref
         if order_id is None or tx_ref is None:
-            return Response({"error": "Order ID and transaction reference and order id are required/missing"}, status=400)
+            return Response({"error": "Order ID and transaction reference and order id are required/missing"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # match order by tx_ref
+        try:
+            order = Order.objects.get(tx_ref=tx_ref)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found for the given transaction reference"}, status=status.HTTP_404_NOT_FOUND)
         # get the order
         try:
             order = Order.objects.get(id=order_id)
@@ -497,9 +515,24 @@ class PaymentWebhookView(APIView):
         return Response({
             "message": "Webhook received successfully",
             "hmac": signature
-            }, status=200)
-    
-        # check payment status
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # handles succesfull payment event
+        # 5. Handle successful payment event
+        if event == "charge.completed" and data.get("status") == "successful":
+            # Avoid re-processing already paid orders
+            if order.status != "PAID":
+                order.status = "PAID"
+                order.save()
+
+                # Trigger additional workflows (send email, grant access, etc.)
+
+        return Response(
+            {"message": "Webhook processed successfully"},
+            status=status.HTTP_200_OK,
+        )
+        ######
+        # handles succesfull payment status
         Payment_status = payload.get("status")
         if Payment_status == "successful":
             order.status = "paid"
