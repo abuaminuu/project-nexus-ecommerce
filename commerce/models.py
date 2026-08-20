@@ -67,23 +67,27 @@ class Product(models.Model):
 class Order(models.Model):
     STATUS = (
         ("pending", "Pending"),
+        ("processing", "Processing"),
+        ("paid", "Paid"),
         ("shipped", "Shipped"),
         ("delivered", "Delivered"),
-        ("cancelled", "Cancelled")
+        ("cancelled", "Cancelled"),
+        ("Failed", "Failed"),
+        ("Refund", "Refund"),
+        ("Returned", "Returned"),
     )
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     order_status= models.CharField(choices=STATUS, null=False, default="pending", max_length=10)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    tx_ref = models.CharField(max_length=128, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
             # Most frequent: User's order history
-            models.Index(fields=['user', 'created_at']),
-            
-            # Status-based queries (admin dashboard)
-            # models.Index(fields=['order_status', 'created_at']),
-            # models.Index(fields=['payment_status', 'order_status']),
+            models.Index(fields=["user", "created_at", "tx_ref"]),
         ]
 
     def total_amount(self):
