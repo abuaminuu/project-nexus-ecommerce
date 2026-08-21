@@ -20,12 +20,12 @@
 22- fix payment issues.
 33- after register, rote to loigin
 44 - remove endpoint- paymet.. to admin.
+55- delete/put works on ui not thunder - auth! - Status: 204 No Content
 
 FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X
 
 echo 'export FLW_SECRET_KEY="FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X"' >> ~/.zshrc
 source ~/.zshrc
-
 
 
 #######

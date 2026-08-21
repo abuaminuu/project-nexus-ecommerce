@@ -18,7 +18,8 @@ urlpatterns = [
     # path("", include(router.urls)),  # include the registered routes
     path("products/", views.ProductViewSet.as_view(), name="index"),
     path("products/<int:pk>/", views.ProductViewSet.as_view(), name="product-detail"),
-    path("payments/callback/", views.PaymentCallbackView.as_view(), name="payment-callback-view"),
+    path("payments/callback/<str:order_id>", views.PaymentCallbackView.as_view(), name="payments-callback-view"),
+    path("payments/webhook/", views.PaymentWebhookView.as_view(), name="payments-webhook-view"),
     path("graphql/", GraphQLView.as_view(graphiql=True), name="graphql-endpoint"),
 ]
 

@@ -28,7 +28,14 @@ SECRET_KEY = "django-insecure-x#qi($pmuq55ar^(k@)kz1r1tu_si87b3iijfogbsc=!(y2%&_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'web']
+ALLOWED_HOSTS = [
+    "localhost", 
+    "127.0.0.1", 
+    "0.0.0.0", 
+    "web", 
+    "ngrok-free.app", 
+    "snowshoe-thank-occupancy.ngrok-free.dev"
+]
 
 AUTH_USER_MODEL = "commerce.User"
 
@@ -92,15 +99,15 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Allowed headers
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
 ]
 
 ROOT_URLCONF = "alx_project_nexus.urls"
@@ -231,6 +238,7 @@ SIMPLE_JWT = {
 }
 
 FLUTTERWAVE_SECRET_KEY = os.getenv("FLW_SECRET_KEY")
+FLUTTERWAVE_SECRET_HASH = "b8a7f27f918b7741c06709f00c79c433cf58cd7a3e2bc51f"
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {

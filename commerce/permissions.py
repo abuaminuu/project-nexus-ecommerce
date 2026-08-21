@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class IsOwner(BasePermission):
+class IsOwnerOrReadOnly(BasePermission):
     """
     Custom permission to only allow owners of an product to edit it and delete it.
     """

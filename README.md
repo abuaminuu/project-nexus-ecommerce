@@ -82,7 +82,6 @@ POST /api/auth/token/
 Authorization: Bearer <your_token>
 ```
 
-
 ### **Products**
 | Method | Endpoint | Description |
 |--------|----------|-------------|

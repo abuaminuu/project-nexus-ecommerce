@@ -1,9 +1,9 @@
 # Delete all migrations
-find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
-find . -path "*/migrations/*.pyc" -delete
+#find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+#find . -path "*/migrations/*.pyc" -delete
 
 # Make fresh migrations
-python manage.py makemigrations
+#python manage.py makemigrations commerce
 
 # Apply migrations
 python manage.py migrate

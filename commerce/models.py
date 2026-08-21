@@ -68,12 +68,9 @@ class Order(models.Model):
     STATUS = (
         ("pending", "Pending"),
         ("processing", "Processing"),
-        ("paid", "Paid"),
         ("shipped", "Shipped"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
-        ("Failed", "Failed"),
-        ("Refund", "Refund"),
         ("Returned", "Returned"),
     )
 
@@ -125,10 +122,13 @@ class Payment(models.Model):
     # confirmed - store owner recieved funds
     
     STATUS = (
-        ("pending", "Pending"),
+
         ("cancel", "Cancel"),
+        ("pending", "Pending"),
+        ("processing", "Processing"),
         ("paid", "Paid"),
-        ("confirmed", "Confirmed")
+        ("failed", "Failed"),
+        ("Refunded", "Refunded"),
     )
     
     METHOD = (
