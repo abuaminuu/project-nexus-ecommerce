@@ -1,6 +1,7 @@
 import os
 import requests
 from rest_framework.response import Response
+import uuid
 
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -62,3 +63,6 @@ def mock_initiate_payment(redirect_url):
     mock_payment_url = f"{redirect_url}{separator}status=successful&tx_ref={tx_ref}&order_id={8}"
     
     return mock_payment_url  # Return the URL directly
+
+def generate_txref():
+    return uuid.uuid4()

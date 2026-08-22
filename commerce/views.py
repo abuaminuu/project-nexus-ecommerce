@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db import transaction
 from rest_framework import viewsets, serializers, status
 from rest_framework.serializers import Serializer
 from rest_framework.reverse import reverse
@@ -21,7 +22,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
-from commerce.payments import initiate_payment
+from commerce.payments import initiate_payment, generate_txref
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import os
@@ -88,10 +89,9 @@ class RegisterView(generics.CreateAPIView):
         # send welcome email asynchronously from celery tasks
         send_welcome_email_task.delay(user.email)
 
-        # redirect user to login page after registration
         # TODO change this to a frontend login page url in production
-        # after user verifed his email, then redirect to login page
-        login_url = reverse("/auth/token/")
+        # after user verifed his email, then redirect to login page frontend
+        login_url = reverse("/auth/login/")
 
         # return response
         return Response({
@@ -234,7 +234,7 @@ class ProductViewSet(APIView):
             'recommended_products': serializer.data
         })
 
-# the final receipt
+# the final receipt/cart
 class OrderViewSet(viewsets.ModelViewSet):
 
     # + is owner permission, and admin can view all orders
@@ -244,7 +244,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Order.objects.all()
-        # TODO filter by current loggedin user
         # prefetch order and their related items
         queryset = queryset.prefetch_related("items", "items__product")
         return queryset
@@ -279,7 +278,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             if existing_item:
                 existing_item.quantity += 1
                 existing_item.save()
-                # return redirect(r"{/orders/{order.id/}")
             else:
                 # add new order item
                 OrderItem.objects.update_or_create(
@@ -291,8 +289,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response(f"Added product {product.name} to order {order.id}")
         
         except Product.DoesNotExist:
-            # return redirect({"error": "Product does not exist"}, status=404)
-            return Response({f"error": "Product {pid} does not exist"}, status=404)
+            return Response({f"error": "Product {pid} does not exist"}, status=status.HTTP_404_NOT_FOUND)
     
     @action(detail=False, methods=["GET"], url_path="create_order_with_item/(?P<pid>[^/.]+)")
     def create_order_with_item(self, request, pk=None, pid=None):
@@ -317,123 +314,53 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             return Response({
                 "error": "Product " + pid + " does not exist"}, 
-                status=404
+                status=status.HTTP_404_NOT_FOUND
             )
-    # tx_ref generator for payment reference
-    def generate_tx_ref(self):
-        import uuid
-        # change to uuid64
-        return str(uuid.uuid4())
 
     # basename -> order-viewset-pay
     @action(detail=True, methods=["POST"], url_path="pay")
     def pay(self, request, pk=None):
-        order = self.get_object()
-        
-        # reserve stock before redirecting to payment
-        for item in order.items.all():
-            product = item.product
-            if product.stock < item.quantity:
-                return Response({'error': 'Insufficient stock'}, status=status.HTTP_400_BAD_REQUEST)
-            # else
-            product.update_stocks(item.quantity)
 
-        # order details
-        order_id = str(order.id)
-        name = str(order.user.first_name + " " + order.user.last_name)
-        email = str(order.user.email)
-        amount = str(order.total_amount())
-        phone = str(order.user.is_staff)
-        redirect_callback = request.build_absolute_uri(f"/api/commerce/v1.1/payments/callback/{order.id}")        
+        # lock row to prevent race condition during rapid double clicks
+        with transaction.atomic():
+            order = self.get_queryset().select_for_update().get(pk=pk)
 
-        tx_ref = f"{order.id}:{self.generate_tx_ref()}"
+            #1 guard against already processing/paid orders
+            if order.order_status in ["paid", "processing"]:
+                # order paid already
+                return Response({
+                    "error": f"order {order.id} paid already/processing"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        # save tax_ref to order for later verification
-        order.tx_ref = tx_ref
-        order.status = "pending"
-        order.save()
+            #2 check stock availability withut deducting yet
+            for item in order.items.select_related("products"):
+                if item.product.stock < item.quantity:
+                    return Response({
+                        "error": f"Insufficient stock for item {item.product.name}"
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
-        # check if payment for this order.id exists in payment table
-        payment_exists = Payment.objects.filter(order=order.id).exists()
-        if payment_exists is False:
-            # make the payment
-            payment_url = initiate_payment(tx_ref, name, email, amount, phone, redirect_callback)
+            #3 reuse existing tx_ref for retrying payments
+            if not order.tx_ref:
+                order.tx_ref = f"{order.id}:{generate_txref()}"
+                order.order_status = "pending"
+                order.save(update_fields=["tx_ref", "order_status"])
+            
+            #4 construct payment payload
+            name = str(order.user.first_name + " " + order.user.last_name)
+            email = str(order.user.email)
+            amount = str(order.total_amount())
+            phone = str(+234567890)
+            redirect_callback = request.build_absolute_uri(f"/api/commerce/v1.1/payments/callback/{order.id}")        
+
+            #4 request payment gateway link
+            payment_url = initiate_payment(order.tx_ref, name, email, amount, phone, redirect_callback)
 
             # proceed to payment gateway and return payment url to frontend
             return Response({
                 "payment_url": payment_url
-            })
+            }, status=status.HTTP_200_OK)
 
-        # order paid already
-        return Response({
-            "message": f"order {order.id} paid already/processing"
-        })
-
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('tx_ref', openapi.IN_QUERY, description="Transaction Reference", type=openapi.TYPE_STRING),
-            openapi.Parameter('status', openapi.IN_QUERY, description="Payment Status", type=openapi.TYPE_STRING),
-        ]
-    )
-    
-    @action(detail=True, methods=["GET"], url_path="confirm-payment")
-    def check_payment(self, request, pk=None):
-        order = self.get_object()
-
-        # check for  payment status for this order.id to avoid double update stock
-        pay_exists = Payment.objects.filter(order=order.id, status__in=["confirmed","paid"]).exists()
-        if pay_exists is True:
-            return Response({
-                "message": f"payment: {pay_exists.id} with order: {order.id} is under processing"
-            })
         
-        # else get status query param from request
-        status = request.query_params.get("status")
-
-        # redirect to payment failed page or return failed response
-        if status != "successful":
-            # rollback stock updates
-            for item in order.items.all():
-                product = item.product
-                product.stock += item.quantity
-                product.save()
-
-            # payment failed for other reasons
-            return Response({"status": f"Payment failed or cancelled for order {order.id}.. retry"})
-
-        # get tx_ref query param from request
-        tx_ref = request.query_params.get("tx_ref")
-
-        # if status success
-        if status == "successful":
-            # get order details and update payment status
-            pay = Payment.objects.create(
-                user=order.user,
-                order=order,
-                amount=order.total_amount(),
-                status="confirmed",
-                tx_ref=tx_ref,
-                method="card",
-            )
-
-            # TODO send order information to logistics
-
-            return Response({
-                "items":str(Order.items),
-                "pay_id": pay.id,
-                "status": "Payment confirmed",
-                "order_id": order.id,
-                "message": "wait for shipment",
-                "tx_ref": tx_ref,
-            })
-        else:
-            # something went wrong/ order paid already
-            return Response({
-                "error": "the order: " + str(order.id ) + " is paid already",
-                "message": "Invalid payment confirmation request"
-            }, status=400
-            )
-
 # payment callback to present failure/success to the user 
 class PaymentCallbackView(APIView):
     
@@ -502,7 +429,7 @@ class PaymentWebhookView(APIView):
         valid_events = ["CARD_TRANSACTION", "charge.complete", None]
 
         # extract tx_ref and order_id
-        tx_ref = payload.get("tx_ref")
+        tx_ref = payload.get("tx_ref") or payload.get("txRef")
         if not tx_ref:
             return Response({""
             "error": "Missing transaction reference (tx_ref) in payload"
@@ -517,13 +444,13 @@ class PaymentWebhookView(APIView):
                 # avoid reprocessing order
                 if order.order_status != "paid":
                     order.order_status = "paid"
-                    # order.save()            
+                    order.save()            
 
-                # TODO Trigger additional workflows (send email, grant access, etc.)
+                # TODO Trigger additional workflows (send email, grant access, logistics etc.)
 
                 # create  a payment record
                 Payment.objects.create(
-                    user=request.user,
+                    user=order.user,
                     order=order,
                     amount=payload.get("charged_amount"),
                     status="paid",
@@ -542,24 +469,13 @@ class PaymentWebhookView(APIView):
             return Response({
                 "error": f"Order not found for transaction reference: {tx_ref}"
             }, status=status.HTTP_404_NOT_FOUND)
-        
-        # elif Payment_status == "failed":
-        #     # restore stock
-        #     for item in order.items.all():
-        #         product = item.product
-        #         product.stock += item.quantity
-        #         product.save()
-        #     order.status = "failed"
-        #     order.save()
-        #     return Response({"message": "Payment failed, stock restored"}, status=200)
 
-        # return Response({"error": "Invalid payment status"}, status=400)
-    
+
 # individula line items on reciept (Order)
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-    permission_classes = [IsAuthenticated]  # + is owner permission
+    permission_classes = [IsAuthenticated]  # + is owner & admin permission
 
 # payment table
 class PaymentViewSet(viewsets.ModelViewSet):
