@@ -3,15 +3,17 @@ from commerce import views
 from graphene_django.views import GraphQLView
 from rest_framework.routers import DefaultRouter
 
-user_router = DefaultRouter()
-# register routes
+# router object
+router = DefaultRouter()
+
+# register user facing endpoints
 # user_router.register(r"profile", views.ProfileViewSet, basename="profile-viewset")
-user_router.register(r"orders", views.OrderViewSet, basename="orders-viewset")
-user_router.register(r"dashboard", views.DashboardViewSet, basename="dashboard-viewset")
-# user_router.register(r"payments", views.PaymentViewSet, basename="payments-viewset")
-# admin dashboard router for admin users
-dashboard_router = DefaultRouter()
-dashboard_router.register(r"orders", views.OrderViewSet, basename="orders-viewset") 
+router.register(r"orders", views.OrderViewSet, basename="orders-viewset")
+router.register(r"order-items", views.OrderItemViewSet, basename="ordersitems-viewset")
+
+# admin dashboard endpoints for admin users
+router.register(r"dashboard/orders", views.OrderViewSet, basename="dashboard-orders-viewset") 
+router.register(r"dashboard/payments", views.PaymentViewSet, basename="dashboard-payment-viewset") 
 
 # add paths
 urlpatterns = [
@@ -23,4 +25,4 @@ urlpatterns = [
     path("graphql/", GraphQLView.as_view(graphiql=True), name="graphql-endpoint"),
 ]
 
-urlpatterns += user_router.urls
+urlpatterns += router.urls

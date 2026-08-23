@@ -6,7 +6,8 @@ from django.db import transaction
 from rest_framework import viewsets, serializers, status
 from rest_framework.serializers import Serializer
 from rest_framework.reverse import reverse
-from . import permissions as custom_permissions
+from rest_framework.pagination import PageNumberPagination
+from commerce.permissions import IsOwnerOrReadOnly
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
 from commerce.models import User, Product, Order, OrderItem, Payment
@@ -333,7 +334,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             #2 check stock availability withut deducting yet
-            for item in order.items.select_related("products"):
+            for item in order.items.select_related("product"):
                 if item.product.stock < item.quantity:
                     return Response({
                         "error": f"Insufficient stock for item {item.product.name}"
@@ -349,7 +350,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             name = str(order.user.first_name + " " + order.user.last_name)
             email = str(order.user.email)
             amount = str(order.total_amount())
-            phone = str(+234567890)
+            phone = "+234567890"
             redirect_callback = request.build_absolute_uri(f"/api/commerce/v1.1/payments/callback/{order.id}")        
 
             #4 request payment gateway link
@@ -483,49 +484,40 @@ class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view all payments
 
-class DashboardViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view
+class DashboardViewSet(viewsets.GenericViewSet):
 
+    # + is owner permission, and IsAdminUser can view
+    permission_classes = [IsAuthenticated] 
+    # set dummy queryset
+    queryset = Order.objects.none()
 
     @action(detail=False, methods=["GET"], url_path="orders")
     def orders(self, request):
-        all_orders = Order.objects.all()
-
-        return Response({
-            "all_orders": all_orders
-        })
-    
-    @action(detail=False, methods=["GET"], url_path="products")
-    def products(self, request):
-
-        all_products = Product.objects.all()
-        serializer = ProductSerializer(all_products, many=True)
-        page = self.paginate_queryset(serializer.data)
-
-        return Response({
-            "all_products": page
-        })  
-    
-    @action(detail=False, methods=["GET"], url_path="users")
-    def users(self, request):
-        all_users = User.objects.all()
-        serializer = UserSerializer(all_users, many=True)
-        page = self.paginate_queryset(serializer.data)
+        # queryset = Order.objects.all()
+        queryset = Order.objects.prefetch_related("items__product").order_by("-created_at")
+        paginator  = PageNumberPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
         
+        if page is not None:
+            serializer = OrderSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        # else fallback global pagination settings
+        serializer = OrderSerializer(queryset, many=True)
         return Response({
-            "all_users": page
+            "orders": serializer.data
         })
+    
     
     @action(detail=False, methods=["GET"], url_path="payments")
     def payments(self, request):
-        all_payments = Payment.objects.all()
-
+        payments = Payment.objects.all()
+        serializer = PaymentSerializer(payments, many=True)
         return Response({
-            "all_payments": all_payments
+            "payments": serializer.data
         })  
     
     # TODO add (users, products, orders, order items, payments) stats 
     # for the last 7 days, 30 days, and 1 year
     # and add privilege check for admin only to access this dashboard view
+    

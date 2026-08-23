@@ -2,9 +2,7 @@ import os
 import requests
 from rest_framework.response import Response
 import uuid
-
-from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+from django.conf import settings
 
 # initiate_payment function to initiate payment with Flutterwave API
 def initiate_payment(tx_ref, name, email, amount, phone, redirect_callback):
@@ -27,10 +25,9 @@ def initiate_payment(tx_ref, name, email, amount, phone, redirect_callback):
 
     # "Authorization": f"Bearer {os.environ.get('FLW_SECRET_KEY')}",
     # remove the above line and use the hardcoded token for testing purposes
-    token = "FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X"
 
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": f"Bearer {getattr(settings, "FLUTTERWAVE_SECRET_KEY", None)}",
         "Content-Type": "application/json",
     }
 

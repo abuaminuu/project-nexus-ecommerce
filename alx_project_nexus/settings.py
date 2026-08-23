@@ -11,31 +11,34 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+import environ
+
+env = environ.Env(
+    # set default values for casting types
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, ["127.0.0.1", "localhost"]),
+    CORS_ALLOWED_ORIGINS=(list, [])
+)
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+env_file = os.path.join(BASE_DIR, ".env.dev")
 
+# check if is a actual file
+if os.path.isfile(env_file):
+    env.read_env(env_file)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-x#qi($pmuq55ar^(k@)kz1r1tu_si87b3iijfogbsc=!(y2%&_"
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = [
-    "localhost", 
-    "127.0.0.1", 
-    "0.0.0.0", 
-    "web", 
-    "ngrok-free.app", 
-    "snowshoe-thank-occupancy.ngrok-free.dev"
-]
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 AUTH_USER_MODEL = "commerce.User"
 
@@ -74,15 +77,13 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "commerce.middlewares.middleware.RequestLoggingMiddleware",
     "commerce.middlewares.middleware.RolePermissionMiddleware"
-    # "commerce.middlewares.middleware.RestrictAccessByTimeMiddleware",
-    # "commerce.middlewares.middleware.RateLimitMiddleware",
     
 ]
 
 # 5173
-REACT_SERVER_URL = os.getenv("REACT_SERVER_URL", "http://localhost:3000")
-CORS_ALLOWED_ORIGINS = [REACT_SERVER_URL]
-CORS_ALLOWED_ALL_ORIGINS = True
+REACT_SERVER_URL = env("REACT_SERVER_URL")
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ALL_ORIGINS = env("CORS_ALLOWED_ALL_ORIGINS")
 
 #  OR for production (recommended):
 CORS_ALLOWED_ORIGINS = [
@@ -146,16 +147,16 @@ WSGI_APPLICATION = "alx_project_nexus.wsgi.application"
 #             "PORT": "5432",
 #     }
 # else:
-#     # for docker settings os.getenv('DB_HOST', 'db'), or 'db'
+#     # for docker settings env('DB_HOST', 'db'), or 'db'
 #     # these are real credentials, use env vars in production
 #     DATABASES = {
 #         "default": {
 #             "ENGINE": "django.db.backends.postgresql",
-#             'NAME': os.getenv('DB_NAME', 'ecommerce_nexus'),
-#             'USER': os.getenv('DB_USER', 'nexus_user'),
-#             'PASSWORD': os.getenv('DB_PASSWORD', 'nexus_pass'),
-#             'HOST': os.getenv('DB_HOST', 'localhost'),
-#             'PORT': os.getenv('DB_PORT', '5432'),
+#             'NAME': env('DB_NAME', 'ecommerce_nexus'),
+#             'USER': env('DB_USER', 'nexus_user'),
+#             'PASSWORD': env('DB_PASSWORD', 'nexus_pass'),
+#             'HOST': env('DB_HOST', 'localhost'),
+#             'PORT': env('DB_PORT', '5432'),
 #         }
 #     }
 
@@ -237,8 +238,8 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-FLUTTERWAVE_SECRET_KEY = os.getenv("FLW_SECRET_KEY")
-FLUTTERWAVE_SECRET_HASH = "b8a7f27f918b7741c06709f00c79c433cf58cd7a3e2bc51f"
+FLUTTERWAVE_SECRET_KEY = env("FLUTTERWAVE_SECRET_KEY")
+FLUTTERWAVE_SECRET_HMAP = env("FLUTTERWAVE_SECRET_HMAP")
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
