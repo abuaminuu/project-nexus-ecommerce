@@ -64,7 +64,6 @@ class CustomPagination(PageNumberPagination):
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
-    logger.info("Accessing RegisterView")
     
     def post(self, request):
         # get data from request
@@ -92,7 +91,8 @@ class RegisterView(generics.CreateAPIView):
 
         # TODO change this to a frontend login page url in production
         # after user verifed his email, then redirect to login page frontend
-        login_url = reverse("/auth/login/")
+        login_url = "/auth/login/"
+
 
         # return response
         return Response({
