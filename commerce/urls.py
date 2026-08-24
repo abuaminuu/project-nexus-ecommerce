@@ -17,7 +17,6 @@ router.register(r"dashboard/payments", views.PaymentViewSet, basename="dashboard
 
 # add paths
 urlpatterns = [
-    # path("", include(router.urls)),  # include the registered routes
     path("products/", views.ProductViewSet.as_view(), name="index"),
     path("products/<int:pk>/", views.ProductViewSet.as_view(), name="product-detail"),
     path("payments/callback/<str:order_id>", views.PaymentCallbackView.as_view(), name="payments-callback-view"),

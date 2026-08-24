@@ -17,15 +17,13 @@
 10- ML integration (recommendation engine)
 22- after sucesful auth redirect to /
 21- delete item that only belongs to you.
-22- fix payment issues.
-33- after register, rote to loigin
+22 - fix payment issues.
+33 - after register, rote to loigin
 44 - remove endpoint- paymet.. to admin.
-55- delete/put works on ui not thunder - auth! - Status: 204 No Content
-
-FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X
-
-echo 'export FLW_SECRET_KEY="FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X"' >> ~/.zshrc
-source ~/.zshrc
+55 - delete/put works on ui not thunder - auth! - Status: 204 No Content
+87 - normal vs industry standard of redirecting user eg: if i have endpoint /order/ 
+    that may accept id /orders/34/ i dont want users to see 404 by going 
+    /orders/user/.... or anyother path that he might try that donot exist on the server
 
 
 #######

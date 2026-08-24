@@ -1,3 +1,6 @@
 db.sqlite3
-.env
-
+.env.dev
+.env.prod
+.env.sample
+flutterwave
+TODOs.txt

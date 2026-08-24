@@ -1,28 +1,11 @@
-1. Retrieve Test API Credentials
 
-client id
-19000d23-f832-444d-80dd-b3006c98ac81
-
-client secret
-N2fxRUJF2q4BfEAqsuizQ6qLMX3ApeTd
-FLWSECK_TEST-44cf5c1416ec7f7cd315128ce944cf99-X
-Bearer FLWSECK_TEST-6ca15cf9d03c1d2f63f6bdf06a011007-X
-
-encryption key
-drGQToedfHMp8GEE/Ska18V9kn7n4rwH5I4v8XKz6NY=
-
-##
-PIN authentication	Mastercard	
+# TEST PIN authentication	Mastercard	
 CARD#: 5531886652142950
 EXP: 09/32	
 CVV2: 564	
 OTP: 12345
 PIN: 3310
 
-##
-https://snowshoe-thank-occupancy.ngrok-free.dev
-hmap webhook secret: b8a7f27f918b7741c06709f00c79c433cf58cd7a3e2bc51f
-ngrok token : 3I8ccKlmeRuUyV3ecjeeeGa18Ic_6jwcem2JjyFCLm1AzJHxc
 
 2. Generate Access Token
 curl -X POST 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token' \

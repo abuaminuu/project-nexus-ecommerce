@@ -13,21 +13,21 @@ A robust, scalable, and production-ready e-commerce backend API built with Djang
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- PostgreSQL 16
-- pip
+- Python 3.11+ - Interpreter
+- Sqlite3 - Database
+- pip - extension manager
 
 ## 🚀 **Live Demo**
-- **API Base URL**: `https://abuaminuu.pythonanywhere.com/api/`
-- **API Documentation**: `https://abuaminuu.pythonanywhere.com/swagger/`
-- **Register/Login**: `https://abuaminuu.pythonanywhere.com/register/`
-
+- **API Base URL**: `https://abuaminuu.pythonanywhere.com/api/commerce/v.1.1/`
+- **API Documentation**: `https://abuaminuu.pythonanywhere.com/api/commerce/v.1.1/swagger/
+- **Register**: `https://abuaminuu.pythonanywhere.com/register/`
+- **Login**: `https://abuaminuu.pythonanywhere.com/auth/login/`
 
 8. **Local Demo**
-- API: http://localhost:8000/api/
-- Swagger Docs: http://localhost:8000/swagger/
+- API: http://localhost:8000/api/commerce/v.1.1/
+- Swagger Docs: http://localhost:8000/api/commerce/v.1.1/swagger/
 - Admin: http://localhost:8000/admin/
-- register/login: https://abuaminuu.pythonanywhere.com/register/
+- register/login: http://localhost:8000/register/
 
 
 ### Installation
@@ -112,6 +112,7 @@ GET /api/products/?search=laptop
 # Filter by category
 GET /api/products/?category=electronics
 ```
+### **Dashboard Urls for Admin Staffs**
 
 
 ## 📦 Main Features
