@@ -18,13 +18,14 @@
 22- after sucesful auth redirect to /
 21- delete item that only belongs to you.
 22 - fix payment issues.
-33 - after register, rote to loigin
-44 - remove endpoint- paymet.. to admin.
-55 - delete/put works on ui not thunder - auth! - Status: 204 No Content
+33 - after register, rote to loigin to be done by FE
+44 - remove endpoint- paymet.. to admin. done
+55 - delete/put works on ui not thunder - auth! - Status: 204 No Content solved.
 87 - normal vs industry standard of redirecting user eg: if i have endpoint /order/ 
     that may accept id /orders/34/ i dont want users to see 404 by going 
-    /orders/user/.... or anyother path that he might try that donot exist on the server
+    /orders/user/.... or anyother path that he might try that donot exist on the server done
 
+78 - test all endpoints on external client.
 
 #######
 shell - done
@@ -54,3 +55,30 @@ General Checklist.
 - permissions
 - expose API
 - CORS
+
+# for testing of db models
+# DATABASES = {}
+
+# # for development (comment on dev)
+# if "test" in os.sys.argv or "test_coverage" in os.sys.argv:
+#     DATABASES["default"] = {
+#             "ENGINE": "django.db.backends.postgresql",
+#             "NAME": "test_ecommerce_nexus",
+#             "USER": "postgres",
+#             "PASSWORD": "postgres",
+#             "HOST": "localhost",
+#             "PORT": "5432",
+#     }
+# else:
+#     # for docker settings env('DB_HOST', 'db'), or 'db'
+#     # these are real credentials, use env vars in production
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.postgresql",
+#             'NAME': env('DB_NAME', 'ecommerce_nexus'),
+#             'USER': env('DB_USER', 'nexus_user'),
+#             'PASSWORD': env('DB_PASSWORD', 'nexus_pass'),
+#             'HOST': env('DB_HOST', 'localhost'),
+#             'PORT': env('DB_PORT', '5432'),
+#         }
+#     }

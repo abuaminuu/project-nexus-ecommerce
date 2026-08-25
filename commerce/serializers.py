@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from commerce.models import User, Product, Order, OrderItem, Payment
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -30,6 +31,8 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = "__all__"
+
+        # fields = ["id", "order_status", "amount", "created_at"]
     
     def get_total_amount(self, object):
         return object.total_amount()
@@ -39,3 +42,22 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+
+class CompactOrderSerializer(serializers.ModelSerializer):
+    """
+    Docstring for CompactOrderSerializer
+    - minimal order schema for simple profile summary
+    """
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+class UserProfileViewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    orders = OrderSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["user", "orders"]
+
+        

@@ -1,14 +1,14 @@
 # project level views
 from rest_framework import urls
-from rest_framework.response import Response
+from django.http import JsonResponse
 
 def index(request):
-    # TODO check session active
     # TODO check which user for specific app(auth will handle such for API external request)
-    
-    # login/register
-    if not request.user.is_authenticated:
-        # show login form
-        # return Response(urls.rest_framework.api-auth)
-        pass
-    
+    # get list of available app and return to FE
+    return JsonResponse({
+        "message": "Welcome to the Multi-App API Gateway",
+        "apps": {
+            "commerce": "/api/commerce/v1.1/",
+            "second_app": "/api/v1.0/maahad/"
+        }
+    })

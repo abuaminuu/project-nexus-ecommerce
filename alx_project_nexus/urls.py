@@ -21,7 +21,7 @@ from commerce import views
 from . import views as root_views
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from django.conf import settings

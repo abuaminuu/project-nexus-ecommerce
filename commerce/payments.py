@@ -39,7 +39,7 @@ def initiate_payment(tx_ref, name, email, amount, phone, redirect_callback):
         data = response.json()
         if data["status"] == "success":
             # return data as url
-            return data["data"]
+            return data["data"]["link"]
     
     except requests.exceptions.RequestException as err:
         if err.response is not None:

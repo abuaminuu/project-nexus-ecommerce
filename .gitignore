@@ -4,3 +4,7 @@ db.sqlite3
 .env.sample
 flutterwave
 TODOs.txt
+loadtime.csv
+.dockerignore
+.dockerignore
+commerce/recalculate.py

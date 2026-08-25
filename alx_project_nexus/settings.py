@@ -67,49 +67,25 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # CORS be first!
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # TODO disable  debug on Prod
+    # TODO disable  debug on prod
     "debug_toolbar.middleware.DebugToolbarMiddleware",
-    "commerce.middlewares.middleware.RequestLoggingMiddleware",
-    "commerce.middlewares.middleware.RolePermissionMiddleware"
-    
+    "commerce.middlewares.middleware.NotFoundUrlsMiddleware"
 ]
 
-# 5173
+# CORS Settings
 REACT_SERVER_URL = env("REACT_SERVER_URL")
-CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
-CORS_ALLOWED_ALL_ORIGINS = env("CORS_ALLOWED_ALL_ORIGINS")
-
-#  OR for production (recommended):
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",      # React dev server
-    "http://127.0.0.1:3000",
-    "http://127.0.0.0:8000",
-    "http://0.0.0.0:8000",
-    "http://0.0.0.0:3000",
-    "https://yourfrontend.com",   # EDIT Production frontend
-]
-
 # Allow credentials (cookies, authentication headers)
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = env.bool("CORS_ALLOW_CREDENTIALS")
+CORS_ALLOWED_ALL_ORIGINS = env("CORS_ALLOWED_ALL_ORIGINS")
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 
 # Allowed headers
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-]
+CORS_ALLOW_HEADERS = env("CORS_ALLOW_HEADERS")
 
 ROOT_URLCONF = "alx_project_nexus.urls"
 
@@ -133,32 +109,6 @@ WSGI_APPLICATION = "alx_project_nexus.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# for testing of db models
-# DATABASES = {}
-
-# # for development (comment on dev)
-# if "test" in os.sys.argv or "test_coverage" in os.sys.argv:
-#     DATABASES["default"] = {
-#             "ENGINE": "django.db.backends.postgresql",
-#             "NAME": "test_ecommerce_nexus",
-#             "USER": "postgres",
-#             "PASSWORD": "postgres",
-#             "HOST": "localhost",
-#             "PORT": "5432",
-#     }
-# else:
-#     # for docker settings env('DB_HOST', 'db'), or 'db'
-#     # these are real credentials, use env vars in production
-#     DATABASES = {
-#         "default": {
-#             "ENGINE": "django.db.backends.postgresql",
-#             'NAME': env('DB_NAME', 'ecommerce_nexus'),
-#             'USER': env('DB_USER', 'nexus_user'),
-#             'PASSWORD': env('DB_PASSWORD', 'nexus_pass'),
-#             'HOST': env('DB_HOST', 'localhost'),
-#             'PORT': env('DB_PORT', '5432'),
-#         }
-#     }
 
 # use sqlite for testing on free hosting services.
 DATABASES = {

@@ -114,13 +114,10 @@ class OrderItem(models.Model):
     def total_price(self):
         return self.quantity * self.price
 
-# TODO add tx_ref
+
 class Payment(models.Model):
 
-    # cancel - customer cancled payment or seek refund
-    # paid - customer debited on confirm-payment/
-    # confirmed - store owner recieved funds
-    
+    # status of payment
     STATUS = (
 
         ("cancel", "Cancel"),
@@ -131,12 +128,14 @@ class Payment(models.Model):
         ("Refunded", "Refunded"),
     )
     
+    # payment method
     METHOD = (
         ("card", "Card"),
         ("transfer", "Transfer"),
         ("cash", "Cash")
     )
 
+    # allowed field
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

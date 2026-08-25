@@ -65,10 +65,10 @@ python manage.py runserver
 ### **Authentication**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/register/` | Register new user |
-| `POST` | `/api/auth/token/` | Login (get JWT tokens) |
+| `POST` | `/register/` | Register new user |
+| `POST` | `/auth/token/` | Login (get JWT tokens) |
 | `POST` | `/api/auth/refresh/` | Refresh access token |
-| `GET` | `/api/users/profile/` | Get user profile with tokens |
+| `GET` | `/api/commerce/v1.1/profile/` | Get user profile with tokens |
 
 ## 🔐 Authentication
 

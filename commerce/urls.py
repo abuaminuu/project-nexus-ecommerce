@@ -1,13 +1,13 @@
-from django.urls import path, include
+from django.urls import path
 from commerce import views
 from graphene_django.views import GraphQLView
 from rest_framework.routers import DefaultRouter
+
 
 # router object
 router = DefaultRouter()
 
 # register user facing endpoints
-# user_router.register(r"profile", views.ProfileViewSet, basename="profile-viewset")
 router.register(r"orders", views.OrderViewSet, basename="orders-viewset")
 router.register(r"order-items", views.OrderItemViewSet, basename="ordersitems-viewset")
 
@@ -17,6 +17,7 @@ router.register(r"dashboard/payments", views.PaymentViewSet, basename="dashboard
 
 # add paths
 urlpatterns = [
+    path("profile/", views.UserProfileViewSet.as_view(), name="user-profile"),
     path("products/", views.ProductViewSet.as_view(), name="index"),
     path("products/<int:pk>/", views.ProductViewSet.as_view(), name="product-detail"),
     path("payments/callback/<str:order_id>", views.PaymentCallbackView.as_view(), name="payments-callback-view"),
@@ -24,4 +25,5 @@ urlpatterns = [
     path("graphql/", GraphQLView.as_view(graphiql=True), name="graphql-endpoint"),
 ]
 
+# add router urls
 urlpatterns += router.urls

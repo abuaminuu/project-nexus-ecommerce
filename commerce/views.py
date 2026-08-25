@@ -17,6 +17,7 @@ from commerce.serializers import (
     OrderSerializer,
     OrderItemSerializer,
     PaymentSerializer,
+    UserProfileViewSerializer
 )
 
 from rest_framework.permissions import IsAuthenticated
@@ -44,11 +45,6 @@ django.setup()
 User = get_user_model()
 
 
-class UserManagementViewSet():
-
-    @action(detail=False, methods=["GET", "POST"], url_path="reset-password")
-    def reset_password(request):
-        return HttpResponse("please change your password")
     
 # config logger
 import logging
@@ -93,7 +89,6 @@ class RegisterView(generics.CreateAPIView):
         # after user verifed his email, then redirect to login page frontend
         login_url = "/auth/login/"
 
-
         # return response
         return Response({
             "message": "User registered successfully",
@@ -122,19 +117,24 @@ class RegisterView(generics.CreateAPIView):
         # 
         return UserSerializer
 
+class UserManagementViewSet():
+    # only admin can see this
+    @action(detail=False, methods=["GET", "POST"], url_path="reset-password")
+    def reset_password(request):
+        return HttpResponse("please change your password")
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+class UserProfileViewSet(APIView):
+
+    permission_classes = [IsAuthenticated]
 
 
-    @action(detail=True, methods=["GET"], url_path="profile")
-    def profile(self, request, pk=None):
-        user = self.get_object()
+    def get(self, request, pk=None):
+        user = request.user
         refresh = RefreshToken.for_user(user)
         products = Product.objects.filter(owner=user)
         orders = Order.objects.filter(user=user)
         payments = Payment.objects.filter(user=user)
+        
         return Response({
             "bio": UserSerializer(user).data,
             "tokens": {
@@ -342,7 +342,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             #3 reuse existing tx_ref for retrying payments
             if not order.tx_ref:
-                order.tx_ref = f"{order.id}:{generate_txref()}"
+                order.tx_ref = f"{request.user}:{order.id}:{generate_txref()}"
                 order.order_status = "pending"
                 order.save(update_fields=["tx_ref", "order_status"])
             
@@ -410,6 +410,7 @@ class PaymentWebhookView(APIView):
         Handle payment gateway webhook notifications.
         This endpoint is used to update order status based on payment results.
         """
+
         # verify HMAC signature
         signature = request.headers.get("verif-hash")
 
@@ -431,6 +432,8 @@ class PaymentWebhookView(APIView):
 
         # extract tx_ref and order_id
         tx_ref = payload.get("tx_ref") or payload.get("txRef")
+        user_id = tx_ref.split(":")[0]
+
         if not tx_ref:
             return Response({""
             "error": "Missing transaction reference (tx_ref) in payload"
@@ -444,6 +447,7 @@ class PaymentWebhookView(APIView):
             if (event_type in valid_events) and payment_status == "successful":
                 # avoid reprocessing order
                 if order.order_status != "paid":
+                    order.user = None
                     order.order_status = "paid"
                     order.save()            
 
@@ -476,17 +480,22 @@ class PaymentWebhookView(APIView):
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-    permission_classes = [IsAuthenticated]  # + is owner & admin permission
+
+    # + is owner & admin permission
+    permission_classes = [IsAuthenticated]  
+
 
 # payment table
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]  # + is owner permission, and admin can view all payments
+
+    # only admin can view all payments
+    permission_classes = [IsAuthenticated]  
 
 class DashboardViewSet(viewsets.GenericViewSet):
 
-    # + is owner permission, and IsAdminUser can view
+    # only IsAdminUser can view
     permission_classes = [IsAuthenticated] 
     # set dummy queryset
     queryset = Order.objects.none()
