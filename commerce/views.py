@@ -20,7 +20,7 @@ from commerce.serializers import (
     UserProfileViewSerializer
 )
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
@@ -148,8 +148,13 @@ class UserProfileViewSet(APIView):
 
 # class handler for product CRUD operations
 class ProductViewSet(APIView):
+
+    #ovverride getpermission to non auth see all products, other verbs must be authenticated
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
     
-    # create product
     def post(self, request):
         if not request.user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)   
@@ -360,7 +365,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({
                 "payment_url": payment_url
             }, status=status.HTTP_200_OK)
-
         
 # payment callback to present failure/success to the user 
 class PaymentCallbackView(APIView):
@@ -387,7 +391,6 @@ class PaymentCallbackView(APIView):
             "order_id": order_id,
             "data": data
             }, status=status.HTTP_400_BAD_REQUEST)    
-
 
 # webhook to handle notification from payment gateway without POLLing
 class PaymentWebhookView(APIView):
@@ -475,7 +478,6 @@ class PaymentWebhookView(APIView):
                 "error": f"Order not found for transaction reference: {tx_ref}"
             }, status=status.HTTP_404_NOT_FOUND)
 
-
 # individula line items on reciept (Order)
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
@@ -483,7 +485,6 @@ class OrderItemViewSet(viewsets.ModelViewSet):
 
     # + is owner & admin permission
     permission_classes = [IsAuthenticated]  
-
 
 # payment table
 class PaymentViewSet(viewsets.ModelViewSet):
