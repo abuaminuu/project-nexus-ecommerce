@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from commerce import views
+from commerce import views as commerce_views
 from . import views as root_views
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -46,8 +46,11 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("register/", views.RegisterView.as_view(), name="register"),
-    path("reset-password/", views.UserManagementViewSet, name="reset-password"),
+    path("register/", commerce_views.RegisterView.as_view(), name="register"),
+    path("recover/password/", root_views.recover_password, name="recover-password"),
+    path("recover/email/", root_views.recover_email, name="recover-email"),
+    path("validate-email", root_views.validate_email, name="validate-email"),
+
 
     # for commerce app
     path("api/commerce/v1.1/", include("commerce.urls")),
