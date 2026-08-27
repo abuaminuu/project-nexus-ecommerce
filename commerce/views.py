@@ -9,6 +9,7 @@ from rest_framework.reverse import reverse
 from rest_framework.pagination import PageNumberPagination
 from commerce.permissions import IsOwnerOrReadOnly
 from django.conf import settings
+from django.db.models import Q, Sum, Count
 from rest_framework.pagination import PageNumberPagination
 from commerce.models import User, Product, Order, OrderItem, Payment
 from commerce.serializers import (
@@ -20,7 +21,7 @@ from commerce.serializers import (
     UserProfileViewSerializer
 )
 
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
@@ -28,6 +29,8 @@ from commerce.payments import initiate_payment, generate_txref
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import os
+from django.utils import timezone
+
 from commerce.filters import ProductFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -528,12 +531,41 @@ class PaymentViewSet(viewsets.ModelViewSet):
     # only admin can view all payments
     permission_classes = [IsAuthenticated]  
 
-class DashboardViewSet(viewsets.GenericViewSet):
+# admin analytics
+class AdminDashboardViewSet(viewsets.GenericViewSet):
 
     # only IsAdminUser can view
-    permission_classes = [IsAuthenticated] 
-    # set dummy queryset
-    queryset = Order.objects.none()
+    permission_classes = [IsAdminUser] 
+    
+    @action(detail=False, methods=["GET"], url_path="metrics")
+    def metrics(self, request):
+        today = timezone.now.date()
+
+        # totla and daily revenue
+        total_revenue = Payment.objects.filter(status="successfull").aggregate(
+            total=sum("amount")
+        )["total"] or 0
+
+        # order breakdown by status
+        order_counts = Order.objects.aggregate(
+            pending=Count("id", filter=Q(order_status="pending")),
+            processing=Count("id", filter=Q(order_status="processing")),
+            paid=Count("id", filter=Q(order_status="paid")),
+            cancelled=Count("id", filter=Q(order_status="cancelled")),   
+        )
+
+        # inventory warning
+        low_stock_products = Product.objects.filter(stock__lte=5).values("id", "name", "stuck")
+
+        return Response({
+            "revenue": {
+                "total": total_revenue
+            },
+            "order_summary": order_counts,
+            "inventory_alerts": list(low_stock_products)
+        })
+
+class AdminOrderViewset(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["GET"], url_path="orders")
     def orders(self, request):
