@@ -247,17 +247,23 @@ class ProductRecommendationView(APIView):
 
 # the final receipt/cart
 class OrderViewSet(viewsets.ModelViewSet):
-
     # + is owner permission, and admin can view all orders
     permission_classes = [IsAuthenticated]
     # serializer class
     serializer_class = OrderSerializer
 
     def get_queryset(self):
+        user = self.request.user
         queryset = Order.objects.all()
         # prefetch order and their related items
         queryset = queryset.prefetch_related("items", "items__product")
-        return queryset
+
+        # admin can view/edit all orders; regular users see thier own
+        if user.is_staff:
+            return queryset
+
+        # specific to user
+        return queryset.filter(user=user)
 
     @swagger_auto_schema(
         method='post',
@@ -278,7 +284,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     )
 
     # add item to existing order
-    @action(detail=True, methods=["POST", "GET"], url_path="add_item/(?P<pid>[^/.]+)")
+    @action(detail=True, methods=["POST"], url_path="add_item/(?P<pid>[^/.]+)")
     def add_item(self, request, pk=None, pid=None):
         # get current order object
         order = self.get_object()
@@ -302,7 +308,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             return Response({f"error": "Product {pid} does not exist"}, status=status.HTTP_404_NOT_FOUND)
     
-    @action(detail=False, methods=["GET"], url_path="create_order_with_item/(?P<pid>[^/.]+)")
+    @action(detail=False, methods=["POST"], url_path="create_order_with_item/(?P<pid>[^/.]+)")
     def create_order_with_item(self, request, pk=None, pid=None):
         user = request.user
     
@@ -370,7 +376,30 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({
                 "payment_url": payment_url
             }, status=status.HTTP_200_OK)
+
+    # override create to enforce ownership while creating
+    def perform_create(self, serializer):
+        # allow admin to specify target user in payload
+        target_user_id = self.request.data.get("user")
+
+        # admin is doing the work for someone
+        if self.request.user.is_staff and target_user_id:
+            serializer.save(user_id=target_user_id)
+        else:
+            # user doing it for themselves
+            serializer.save(user=self.request.user)
+
+    # do for pwerfome as well
+    def perform_update(self, serializer):
+        target_user_id = self.request.data.get("user")
         
+        # Admin can explicitly reassign ownership during update if user is passed
+        if self.request.user.is_staff and target_user_id:
+            serializer.save(user_id=target_user_id)
+        else:
+            # Preserves existing order.user (does NOT override with admin's account)
+            serializer.save()
+
 # payment callback to present failure/success to the user 
 class PaymentCallbackView(APIView):
     
