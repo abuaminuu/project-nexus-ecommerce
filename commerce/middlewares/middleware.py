@@ -3,7 +3,7 @@ import csv
 import os
 import datetime
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
-
+from rest_framework.views import status
 
 # Get the absolute path of the current script's folder
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -280,3 +280,26 @@ class RolePermissionMiddleware:
             status=403
         )
     
+# catches urls that are not in the app and report 404
+class NotFoundUrlsMiddleware():
+    """
+    Docstring for NotFoundUrlsMiddleware
+    - rejects any url thats not part of this application
+    """
+
+    def __init__(self, get_response):
+        
+        self.get_response = get_response
+        # get valid urls
+        self.valid_urls = None
+    
+    def __call__(self, request, *args, **kwargs):
+        
+        response = self.get_response(request)
+        if response.status_code == 404 and "text/html" in response.get("Content-Type", ""):
+            return JsonResponse({
+                "detail": f"url: {request.path} not available",
+                "code": "not found"
+            }, status=404)
+        
+        return response

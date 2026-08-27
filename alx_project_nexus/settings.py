@@ -225,7 +225,7 @@ CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 
 CELERY_RESULTS_BACKEND = "redis://127.0.0.1:6379/0"
 
-# TODO change console to smtp in prod
+# TODO change console for dev and smtp for prod
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587

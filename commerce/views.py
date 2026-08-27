@@ -226,19 +226,24 @@ class ProductViewSet(APIView):
         # else delete the product
         product.delete()
         return Response({"message": "Product deleted successfully"}, status=status.HTTP_200_OK)    
-    
-    # works with ModelViewsets only (create separate endpoint for recommendations)
-    @action(detail=True, methods=['GET'], url_path="recommendations")
-    def recommendations(self, request, pk=None):
-        """Get product recommendations"""
-        product = self.get_object()
-        recommended_products = simple_recommender.simple_recommendations(product.id, limit=4)
-        
+
+# products recommendations
+class ProductRecommendationView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk=None):
+        product = Product.objects.get(pk=pk)
+        # stub logic for testing (implement with ML Later)
+        recommended_products = Product.objects.filter(
+            category=product.category
+        ).exclude(id=product.id)[:5]
+
         serializer = ProductSerializer(recommended_products, many=True)
+
         return Response({
-            'product': product.name,
-            'recommended_products': serializer.data
-        })
+            "products": product.name,
+            "recommendations": serializer.data
+        }, status=status.HTTP_200_OK)
 
 # the final receipt/cart
 class OrderViewSet(viewsets.ModelViewSet):

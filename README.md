@@ -68,7 +68,9 @@ python manage.py runserver
 | `POST` | `/register/` | Register new user |
 | `POST` | `/auth/token/` | Login (get JWT tokens) |
 | `POST` | `/api/auth/refresh/` | Refresh access token |
-| `GET` | `/api/commerce/v1.1/profile/` | Get user profile with tokens |
+| `GET` | `/api/commerce/v1.1/profile/` | Get user profile with tokens/bio.. |
+| `POST` | `/api/commerce/v1.1/recover/password` | Recover password for a user with valid auth/tokens |
+
 
 ## 🔐 Authentication
 
@@ -85,12 +87,12 @@ Authorization: Bearer <your_token>
 ### **Products**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/products/` | List all products (public) |
-| `POST` | `/api/products/` | Create product (authenticated) |
-| `GET` | `/api/products/{id}/` | Product details (public)|
-| `PUT` | `/api/products/{id}/` | Update product (authenticated owner only) |
-| `DELETE` | `/api/products/{id}/` | Delete product (authenticated owner only) |
-| `GET` | `/api/products/{id}/recommendations` | See product recommendations per this product id  (authenticated owner only) |
+| `GET` | `/api/commerce/v1.1/products/` | List all products (public) |
+| `POST` | `/api/commerce/v1.1/products/` | Create product (authenticated) |
+| `GET` | `/api/commerce/v1.1/products/{id}/` | Product details (public)|
+| `PUT` | `/api/commerce/v1.1/products/{id}/` | Update product (authenticated & owner only) |
+| `DELETE` | `/api/commerce/v1.1/products/{id}/` | Delete product (authenticated & owner only) |
+| `GET` | `/api/commerce/v1.1/products/{id}/recommendations` | See product recommendations per this product id  (authenticated owner only) |
 
 
 ### **Orders**

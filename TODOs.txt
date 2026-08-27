@@ -82,3 +82,12 @@ General Checklist.
 #             'PORT': env('DB_PORT', '5432'),
 #         }
 #     }
+
+
+catch
+POST http://127.0.0.1:8000/api/commerce/v1.1/products/514/
+TypeError at /api/commerce/v1.1/products/514/
+ProductViewSet.post() got an unexpected keyword argument 'pk'
+Request Method:	POST
+Request URL:	http://127.0.0.1:8000/api/commerce/v1.1/products/514/
+Django Version:
