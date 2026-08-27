@@ -7,8 +7,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from commerce.models import User
-
-import json
+from django.core.mail import send_mail
+import random
+import string
 
 def index(request):
     # TODO check which user for specific app(auth will handle such for API external request)
@@ -47,6 +48,14 @@ def recover_password(request):
            "message": "check email for code and try again!"
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    OTP = lambda: ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+
+    subject = "Password Reset"
+    message = f"Your OTP: {OTP()}"
+    sender = "e.abuaminu@gmail.com"
+    recipients = ["i.abuaminu@gmail.com"]
+    # send email to user
+    send_mail(subject, message, sender, recipients, fail_silently=False)
     return Response({
         "message":"password reset successful",
         "success":True,
@@ -80,14 +89,21 @@ def send_mail_confirmation(email, *kargs, **kwargs):
     """
     # verify email first
     if validate_email(email):
+        subject = "Password Reset"
+        message = "Your OTP: 7Y^5#$"
+        sender = "e.abuaminu@gmail.com"
+        recipients = ["i.abuaminu@gmail.com"]
+        # send email to user
+        send_mail(subject, message, sender, recipients)
         return Response({
-            "message":"please check your email for code: use: 'abc-fg1'"
+            "message":"please check your email for code valid for 10 min"
         }, status=status.HTTP_200_OK)
 
 
 def validate_email(request):
     email = request.data.get("email")
     if User.objects.get(email=email):
+        
         return True
     return False
     
