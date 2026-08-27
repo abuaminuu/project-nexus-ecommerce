@@ -251,7 +251,7 @@ class ProductRecommendationView(APIView):
 # the final receipt/cart
 class OrderViewSet(viewsets.ModelViewSet):
     # + is owner permission, and admin can view all orders
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
     # serializer class
     serializer_class = OrderSerializer
 
@@ -521,32 +521,39 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     serializer_class = OrderItemSerializer
 
     # + is owner & admin permission
-    permission_classes = [IsAuthenticated]  
+    permission_classes = [IsAdminUser]  
 
 # payment table
 class PaymentViewSet(viewsets.ModelViewSet):
+    # only admin can view all payments
+    permission_classes = [IsAdminUser]
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
-    # only admin can view all payments
-    permission_classes = [IsAuthenticated]  
 
 # admin analytics
-class AdminDashboardViewSet(viewsets.GenericViewSet):
+class AdminDashboardViewSet(viewsets.ViewSet):
 
     # only IsAdminUser can view
     permission_classes = [IsAdminUser] 
     
-    @action(detail=False, methods=["GET"], url_path="metrics")
-    def metrics(self, request):
-        today = timezone.now.date()
+    # @action(detail=False, methods=["GET"], url_path="metrics")
+    def list(self, request):
+        today = timezone.now().date()
 
         # totla and daily revenue
-        total_revenue = Payment.objects.filter(status="successfull").aggregate(
-            total=sum("amount")
-        )["total"] or 0
+        total_revenue_dict = Payment.objects.filter(status="successfull").aggregate(total=Sum("amount"))
 
-        # order breakdown by status
+        # todays revenue
+        today_revenue_dict = Order.objects.filter(order_status="successfull", created_at__date=today).aggregate(today=Sum("amount"))
+        
+        total_revenue = total_revenue_dict["total"] or 0
+        today_revenue = today_revenue_dict["today"] or 0
+
+        #  orders today
+        orders_today = Order.objects.filter(created_at__date=today).count()
+
+        # all time order breakdown by status
         order_counts = Order.objects.aggregate(
             pending=Count("id", filter=Q(order_status="pending")),
             processing=Count("id", filter=Q(order_status="processing")),
@@ -555,35 +562,47 @@ class AdminDashboardViewSet(viewsets.GenericViewSet):
         )
 
         # inventory warning
-        low_stock_products = Product.objects.filter(stock__lte=5).values("id", "name", "stuck")
+        low_stock_products = Product.objects.filter(stock__lte=5).values("id", "name", "stock")
 
         return Response({
             "revenue": {
-                "total": total_revenue
+                "total": total_revenue,
+                "today": today_revenue
             },
-            "order_summary": order_counts,
+            "orders": {
+                "today_count": orders_today,
+                "summary": order_counts,
+            },
             "inventory_alerts": list(low_stock_products)
         })
 
+
 class AdminOrderViewset(viewsets.ModelViewSet):
-
-    @action(detail=False, methods=["GET"], url_path="orders")
-    def orders(self, request):
-        # queryset = Order.objects.all()
-        queryset = Order.objects.prefetch_related("items__product").order_by("-created_at")
-        paginator  = PageNumberPagination()
-        page = paginator.paginate_queryset(queryset, request, view=self)
-        
-        if page is not None:
-            serializer = OrderSerializer(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
-
-        # else fallback global pagination settings
-        serializer = OrderSerializer(queryset, many=True)
-        return Response({
-            "orders": serializer.data
-        })
+    """Admin-only viewset for auditing and managing all customer orders."""
+    permission_classes = [IsAdminUser]
+    serializer_class = OrderSerializer
+    queryset = Order.objects.prefetch_related("items__product", "user").order_by("-created_at")
     
+    # Admins can explicitly update order status (e.g., mark shipped or cancelled)
+    @action(detail=True, methods=["POST"], url_path="update_status")
+    def update_status(self, request, pk=None):
+        order = self.get_object()
+        new_status = request.data.get("status")
+        valid_statuses = ["pending", "processing", "paid", "shipped", "cancelled"]
+        
+        if new_status not in valid_statuses:
+            return Response({
+                "error": "invalid status param"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # else
+        old_status = order.order_status
+        order.order_status = new_status
+        order.save(update_fields["order_status"])
+
+        return Response({
+            "message": f"order: {order.id} status updated from {old_status} to {new_status}"
+        })
     
     @action(detail=False, methods=["GET"], url_path="payments")
     def payments(self, request):
@@ -592,8 +611,4 @@ class AdminOrderViewset(viewsets.ModelViewSet):
         return Response({
             "payments": serializer.data
         })  
-    
-    # TODO add (users, products, orders, order items, payments) stats 
-    # for the last 7 days, 30 days, and 1 year
-    # and add privilege check for admin only to access this dashboard view
     
