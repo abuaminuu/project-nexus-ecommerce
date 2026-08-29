@@ -5,17 +5,19 @@ setuptools==79.0.0
 djangorestframework-simplejwt==5.2.2
 
 # Database
-psycopg[binary]==3.3.2
+psycopg[binary]
 
 # Essential utilities
 python-dotenv==1.2.1
 requests==2.32.5
-Pillow==10.1.0  # For ImageField
+# For ImageField
+Pillow
 
 # Optional but useful
 django-cors-headers==4.9.0
 django-filter==25.2
-drf-yasg==1.21.11  # For Swagger
+# For Swagger
+drf-yasg
 pytest==7.4.0
 
 # background task processing

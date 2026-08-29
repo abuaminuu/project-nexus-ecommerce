@@ -43,7 +43,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = "__all__"
 
-class CompactOrderSerializer(serializers.ModelSerializer):
+class AdminOrderSerializer(serializers.ModelSerializer):
     """
     Docstring for CompactOrderSerializer
     - minimal order schema for simple profile summary

@@ -99,3 +99,8 @@ Django Version:
     # TODO add (users, products, orders, order items, payments) stats 
     # for the last 7 days, 30 days, and 1 year
     # and add privilege check for admin only to access this dashboard view
+
+
+install -r requests
+migrate
+collectstatic --no

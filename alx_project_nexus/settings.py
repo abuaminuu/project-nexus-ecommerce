@@ -55,8 +55,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "graphene_django",
     # 'rest_framework_simplejwt.token_blacklist', # Optional: for blacklisting
-    "rest_framework",
     "django_filters",
+    "rest_framework",
     "core",
     "commerce",
     "maahad",

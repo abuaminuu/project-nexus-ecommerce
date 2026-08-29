@@ -1,13 +1,10 @@
 from django.shortcuts import get_object_or_404
-from commerce.recommendations import simple_recommender
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
 from rest_framework import viewsets, serializers, status
 from rest_framework.serializers import Serializer
-from rest_framework.reverse import reverse
 from rest_framework.pagination import PageNumberPagination
-from commerce.permissions import IsOwnerOrReadOnly
 from django.conf import settings
 from django.db.models import Q, Sum, Count
 from rest_framework.pagination import PageNumberPagination
@@ -18,7 +15,7 @@ from commerce.serializers import (
     OrderSerializer,
     OrderItemSerializer,
     PaymentSerializer,
-    UserProfileViewSerializer
+    AdminOrderSerializer
 )
 
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
@@ -32,6 +29,7 @@ import os
 from django.utils import timezone
 
 from commerce.filters import ProductFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import filters
@@ -46,7 +44,6 @@ django.setup()
 
 
 User = get_user_model()
-
 
     
 # config logger
@@ -128,8 +125,8 @@ class UserManagementViewSet():
 
 class UserProfileViewSet(APIView):
 
+    # optionally add adminuser
     permission_classes = [IsAuthenticated]
-
 
     def get(self, request, pk=None):
         user = request.user
@@ -151,11 +148,12 @@ class UserProfileViewSet(APIView):
 
 # class handler for product CRUD operations
 class ProductViewSet(APIView):
-
-    #ovverride getpermission to non auth see all products, other verbs must be authenticated
+    
+    # override getpermission to non auth see all products, other verbs must be authenticated
     def get_permissions(self):
         if self.request.method == 'GET':
             return [AllowAny()]
+        # only auth users can do POST, PATCH, DELETE ...
         return [IsAuthenticated()]
     
     def post(self, request):
@@ -382,7 +380,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     # override create to enforce ownership while creating
     def perform_create(self, serializer):
-        # allow admin to specify target user in payload
+        # allow admin to specify target user in payload during request
         target_user_id = self.request.data.get("user")
 
         # admin is doing the work for someone
@@ -405,7 +403,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 # payment callback to present failure/success to the user 
 class PaymentCallbackView(APIView):
-    
+    # optionally add payment urls  
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, order_id=None):
@@ -441,7 +439,7 @@ class PaymentWebhookView(APIView):
       verfiy payment gateways HMAC (Hash-based Message Authentication Code) to avoid 
       spoofing and ensure the request is from a trusted source.
     """
-    # No authentication required for webhook
+    # No any authentication required for webhook.
     authentication_classes = []  
     permission_classes = [permissions.AllowAny]
 
@@ -517,11 +515,10 @@ class PaymentWebhookView(APIView):
 
 # individula line items on reciept (Order)
 class OrderItemViewSet(viewsets.ModelViewSet):
+    # admin permission
+    permission_classes = [IsAdminUser]  
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-
-    # + is owner & admin permission
-    permission_classes = [IsAdminUser]  
 
 # payment table
 class PaymentViewSet(viewsets.ModelViewSet):
@@ -529,7 +526,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-
 
 # admin analytics
 class AdminDashboardViewSet(viewsets.ViewSet):
@@ -580,9 +576,10 @@ class AdminDashboardViewSet(viewsets.ViewSet):
 class AdminOrderViewset(viewsets.ModelViewSet):
     """Admin-only viewset for auditing and managing all customer orders."""
     permission_classes = [IsAdminUser]
-    serializer_class = OrderSerializer
+    serializer_class = AdminOrderSerializer
     queryset = Order.objects.prefetch_related("items__product", "user").order_by("-created_at")
     
+   
     # Admins can explicitly update order status (e.g., mark shipped or cancelled)
     @action(detail=True, methods=["POST"], url_path="update_status")
     def update_status(self, request, pk=None):
@@ -603,12 +600,4 @@ class AdminOrderViewset(viewsets.ModelViewSet):
         return Response({
             "message": f"order: {order.id} status updated from {old_status} to {new_status}"
         })
-    
-    @action(detail=False, methods=["GET"], url_path="payments")
-    def payments(self, request):
-        payments = Payment.objects.all()
-        serializer = PaymentSerializer(payments, many=True)
-        return Response({
-            "payments": serializer.data
-        })  
     
