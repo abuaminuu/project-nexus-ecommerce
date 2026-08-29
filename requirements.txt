@@ -8,7 +8,7 @@ djangorestframework-simplejwt==5.2.2
 psycopg[binary]
 
 # Essential utilities
-python-dotenv==1.2.1
+django-environ
 requests==2.32.5
 # For ImageField
 Pillow
