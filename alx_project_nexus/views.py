@@ -11,6 +11,8 @@ from django.core.mail import send_mail
 import random
 import string
 
+
+@api_view(["GET"])
 def index(request):
     # TODO check which user for specific app(auth will handle such for API external request)
     # get list of available app and return to FE
