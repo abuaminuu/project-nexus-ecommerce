@@ -85,9 +85,17 @@ General Checklist.
 
 
 catch
-POST http://127.0.0.1:8000/api/commerce/v1.1/products/514/
+- POST http://127.0.0.1:8000/api/commerce/v1.1/products/514/
 TypeError at /api/commerce/v1.1/products/514/
 ProductViewSet.post() got an unexpected keyword argument 'pk'
 Request Method:	POST
 Request URL:	http://127.0.0.1:8000/api/commerce/v1.1/products/514/
 Django Version:
+2- General runtime error eg: POST http://127.0.0.1:8000/api/commerce/v1.1/orders/514 and related errors
+3- orders/id should not allow PUT on amount, user, (only order metadata details: eg shipping address, promocode, stattus(by admin) etc)
+4- expalin : Q,F, Sum Count in django.db.models
+
+    
+    # TODO add (users, products, orders, order items, payments) stats 
+    # for the last 7 days, 30 days, and 1 year
+    # and add privilege check for admin only to access this dashboard view

@@ -16,6 +16,7 @@ A robust, scalable, and production-ready e-commerce backend API built with Djang
 - Python 3.11+ - Interpreter
 - Sqlite3 - Database
 - pip - extension manager
+- ngrok - webhook test on localhost port:8000 -> terminal$ ngrok http 8000
 
 ## 🚀 **Live Demo**
 - **API Base URL**: `https://abuaminuu.pythonanywhere.com/api/commerce/v.1.1/`
@@ -44,13 +45,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Configure environment
-cp .env.example .env
+cp .env.sample .env
 # Edit .env with your settings
 
-# Run migrations
+# Run migrations first
 python manage.py migrate
 
-# seed data for testing 
+# modify seek.py to seed data for testing.
 python commerce/fake.py
 
 # Create superuser
@@ -69,7 +70,7 @@ python manage.py runserver
 | `POST` | `/auth/token/` | Login (get JWT tokens) |
 | `POST` | `/api/auth/refresh/` | Refresh access token |
 | `GET` | `/api/commerce/v1.1/profile/` | Get user profile with tokens/bio.. |
-| `POST` | `/api/commerce/v1.1/recover/password` | Recover password for a user with valid auth/tokens |
+| `POST` | `/api/commerce/v1.1/recover/password` | Recover password for a user with valid auth/tokens and recieve email|
 
 
 ## 🔐 Authentication
@@ -98,24 +99,34 @@ Authorization: Bearer <your_token>
 ### **Orders**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/orders/` | Create new order (authenticated) |
-| `GET` | `/api/orders/{id}/` | Order details (authenticated) |
-| `POST` | `/api/orders/{id}/pay/` | Initiate payment  (authenticated) |
-| `POST` | `/api/orders/{id}/confirm_payment/` | Confirm payment (authenticated) |
+| `POST` | `/api/commerce/v1.1/orders/` | Create new order (authenticated) |
+| `GET` | `/api/commerce/v1.1/orders/{id}/` | Order details (authenticated) |
+| `PUT` | `/api/commerce/v1.1/orders/{id}/` | Update Order details (authenticated) |
+| `PATCH` | `/api/commerce/v1.1/orders/{id}/` | Partially Update Order details (authenticated) |
+| `DELETE` | `/api/commerce/v1.1/orders/{id}/` | Delete Order details (authenticated) |
+
+| `POST` | `/api/commerce/v1.1/orders/{id}/pay/` | Initiate payment  (authenticated) |
+| `POST` | `/api/commerce/v1.1/orders/{id}/confirm_payment/` | Confirm payment (authenticated) |
+
+### **Dashboard Urls for Admin Staffs**
+| `GET` | `/api/commerce/v1.1/dashboard/analytics` | Business Analytics for the App(AdminUser only) |
+| `GET` | `/api/commerce/v1.1/dashboard/orders` | Orders made for entire App(AdminUser only) |
+
+| `GET` | `/api/commerce/v1.1/dashboard/payments` | Payments made for entire App(AdminUser only) |
+
+
 
 ### **Filtering & Sorting**
 ```bash
 # Filter by price range
-GET /api/products/?min_price=100&max_price=500
+GET /api/commerce/v1.1/products/?min_price=100&max_price=500
 
 # Search products
-GET /api/products/?search=laptop
+GET /api/commerce/v1.1/products/?search=laptop
 
 # Filter by category
-GET /api/products/?category=electronics
+GET /api/commerce/v1.1/products/?category=electronics
 ```
-### **Dashboard Urls for Admin Staffs**
-
 
 ## 📦 Main Features
 
@@ -190,8 +201,8 @@ Payment
 | **API Documentation** | drf-yasg (Swagger/OpenAPI) |
 | **Testing** | Django Test Framework, unittest |
 | **Deployment** | PythonAnywhere |
-| **Payment Gateway** | Flutterwave API |
-| **TODO Validation** | Django Validators, Serializer Validation |
+| **Payment Gateway** | Flutterwave API V3|
+| **Validation** | Django Validators, Serializer Validation |
 
 
 ## 🧪 **Testing**

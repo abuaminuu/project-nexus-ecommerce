@@ -30,9 +30,9 @@ class OrderSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Order
+        # return relevant fields
         fields = "__all__"
-
-        # fields = ["id", "order_status", "amount", "created_at"]
+        read_only_fields = ["user", "order_status", "tx_ref"]
     
     def get_total_amount(self, object):
         return object.total_amount()
