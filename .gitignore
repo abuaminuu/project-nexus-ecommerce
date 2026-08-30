@@ -9,4 +9,4 @@ loadtime.csv
 .dockerignore
 commerce/recalculate.py
 HTTP-status-codes.md
-
+deploy.sh

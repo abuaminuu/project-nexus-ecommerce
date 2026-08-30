@@ -249,22 +249,22 @@ class ProductRecommendationView(APIView):
 # the final receipt/cart
 class OrderViewSet(viewsets.ModelViewSet):
     # + is owner permission, and admin can view all orders
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated]
     # serializer class
     serializer_class = OrderSerializer
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Order.objects.all()
-        # prefetch order and their related items
-        queryset = queryset.prefetch_related("items", "items__product")
-
-        # admin can view/edit all orders; regular users see thier own
+        queryset = None
+        # only admin can see all users
         if user.is_staff:
-            return queryset
-
-        # specific to user
-        return queryset.filter(user=user)
+            queryset = Order.objects.all()
+            # prefetch order and their related items
+            # admin can view/edit all orders; regular users see thier own
+            return queryset.prefetch_related("items", "items__product")
+        
+        # specific to orders users
+        return Order.objects.filter(user=user)
 
     @swagger_auto_schema(
         method='post',
@@ -441,7 +441,7 @@ class PaymentWebhookView(APIView):
     """
     # No any authentication required for webhook.
     authentication_classes = []  
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         """
@@ -527,6 +527,16 @@ class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
+    # modify payment queryset
+    def get_queryset(self):
+        user = self.request.user
+
+        # admin sees all payments
+        if user.is_staff:
+            return Payment.objects.all()
+        # everybody see his own payments
+        return Payment.objects.filter(user=user)
+
 # admin analytics
 class AdminDashboardViewSet(viewsets.ViewSet):
 
@@ -600,4 +610,3 @@ class AdminOrderViewset(viewsets.ModelViewSet):
         return Response({
             "message": f"order: {order.id} status updated from {old_status} to {new_status}"
         })
-    
