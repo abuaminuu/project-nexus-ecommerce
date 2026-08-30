@@ -20,7 +20,7 @@ def index(request):
         "message": "Welcome to the Multi-App API Gateway",
         "apps": {
             "commerce": "/api/commerce/v1.1/",
-            "second_app": "/api/v1.0/maahad/"
+            "maahad": "/api/v1.0/maahad/"
         }
     }, status=status.HTTP_200_OK)
 
